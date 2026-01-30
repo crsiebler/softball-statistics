@@ -214,10 +214,10 @@ def _create_team_sheet(
             worksheet.append(list(totals_row.values()))
             # Apply borders to totals row to match table styling
             thin_border = Border(
-                left=Side(style='thin'), 
-                right=Side(style='thin'), 
-                top=Side(style='thin'), 
-                bottom=Side(style='thin')
+                left=Side(style="thin"),
+                right=Side(style="thin"),
+                top=Side(style="thin"),
+                bottom=Side(style="thin"),
             )
             totals_row_num = worksheet.max_row
             for col in range(1, 17):  # Columns A to P
