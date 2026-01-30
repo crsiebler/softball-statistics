@@ -143,3 +143,96 @@ class TestExcelExporter:
         finally:
             if os.path.exists(output_path):
                 os.unlink(output_path)
+
+    def test_autofilter_applied_to_league_summary_sheet(self):
+        """Test that autofilter is applied to League Summary sheet column headers."""
+        stats_data = {
+            "league_name": "test_league",
+            "season": "Winter 2024",
+            "team_stats": {
+                "Test Team": {
+                    "games_played": 1,
+                    "players": [],
+                    "team_batting_average": 0.000,
+                    "team_on_base_percentage": 0.000,
+                    "team_slugging_percentage": 0.000,
+                    "team_ops": 0.000,
+                }
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = f.name
+
+        try:
+            export_to_excel(stats_data, output_path)
+
+            # Load the workbook and check autofilter
+            wb = load_workbook(output_path)
+            sheet = wb["League Summary"]
+
+            # Check that autofilter is applied (should have a ref range)
+            assert sheet.auto_filter.ref is not None
+            assert sheet.auto_filter.ref != ""  # Should not be empty
+
+        finally:
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+
+    def test_autofilter_applied_to_team_sheet(self):
+        """Test that autofilter is applied to team sheet column headers (excluding totals)."""
+        stats_data = {
+            "league_name": "test_league",
+            "season": "Winter 2024",
+            "team_stats": {
+                "Cyclones": {
+                    "games_played": 1,
+                    "players": [
+                        {
+                            "player_id": 1,
+                            "player_name": "Test Player",
+                            "at_bats": 1,
+                            "hits": 1,
+                            "singles": 1,
+                            "doubles": 0,
+                            "triples": 0,
+                            "home_runs": 0,
+                            "rbis": 0,
+                            "runs_scored": 0,
+                            "batting_average": 1.000,
+                            "on_base_percentage": 1.000,
+                            "slugging_percentage": 1.000,
+                            "ops": 2.000,
+                        }
+                    ],
+                    "team_batting_average": 1.000,
+                    "team_on_base_percentage": 1.000,
+                    "team_slugging_percentage": 1.000,
+                    "team_ops": 2.000,
+                }
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = f.name
+
+        try:
+            export_to_excel(stats_data, output_path)
+
+            # Load the workbook and check autofilter on Cyclones sheet
+            wb = load_workbook(output_path)
+            sheet = wb["Cyclones"]
+
+            # Check that autofilter is applied
+            assert sheet.auto_filter.ref is not None
+            assert sheet.auto_filter.ref != ""
+
+            # Autofilter should cover data rows but exclude totals (last 2 rows)
+            # With 1 player: rows = header(1) + player(2) + empty(3) + totals(4)
+            # Filter should go to row 2 (worksheet.max_row - 2 = 4 - 2 = 2)
+            expected_ref = "A1:P2"  # Assuming 16 columns (A-P)
+            assert sheet.auto_filter.ref == expected_ref
+
+        finally:
+            if os.path.exists(output_path):
+                os.unlink(output_path)

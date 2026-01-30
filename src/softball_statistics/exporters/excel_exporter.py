@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 from openpyxl.styles import Border, Side
+from openpyxl.utils import get_column_letter
 
 from softball_statistics.interfaces import QueryRepository
 from softball_statistics.models import PlayerStats
@@ -80,7 +81,9 @@ def _create_league_summary_sheet(
     stats_data: Dict[str, Any], writer: pd.ExcelWriter
 ) -> None:
     """Create the league summary sheet."""
-    league_name = stats_data.get("league_name", "Unknown League").replace("_", " ").title()
+    league_name = (
+        stats_data.get("league_name", "Unknown League").replace("_", " ").title()
+    )
     stats_data.get("season", "Unknown Season")
 
     summary_data = []
@@ -132,6 +135,9 @@ def _create_league_summary_sheet(
     worksheet.column_dimensions["F"].width = 12  # Team OBP
     worksheet.column_dimensions["G"].width = 12  # Team SLG
     worksheet.column_dimensions["H"].width = 12  # Team OPS
+
+    # Add autofilter to column headers
+    worksheet.auto_filter.ref = worksheet.dimensions
 
 
 def _create_team_sheet(
@@ -226,6 +232,10 @@ def _create_team_sheet(
             for col in range(1, 17):  # Columns A to P
                 cell = worksheet.cell(row=totals_row_num, column=col)
                 cell.border = thin_border
+
+        # Add autofilter to column headers (excluding totals row)
+        max_col_letter = get_column_letter(worksheet.max_column)
+        worksheet.auto_filter.ref = f"A1:{max_col_letter}{worksheet.max_row - 2}"
 
 
 def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
@@ -372,6 +382,9 @@ def _create_player_summary_sheet(
         worksheet.column_dimensions["O"].width = 10  # OBP
         worksheet.column_dimensions["P"].width = 10  # SLG
         worksheet.column_dimensions["Q"].width = 10  # OPS
+
+        # Add autofilter to column headers
+        worksheet.auto_filter.ref = worksheet.dimensions
 
 
 def _create_player_sheet(player_stats: PlayerStats, writer: pd.ExcelWriter) -> None:
