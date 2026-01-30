@@ -84,20 +84,17 @@ def _create_league_summary_sheet(
 
     summary_data = []
     for team_name, team_stats in stats_data.get("team_stats", {}).items():
-        # Calculate team totals for PA, BB, SF
+        # Calculate team totals for PA, BB, SF (removed from display but kept for potential future use)
         players = team_stats.get("players", [])
-        team_pa = sum(p.get("plate_appearances", 0) for p in players)
-        team_bb = sum(p.get("walks", 0) for p in players)
-        team_sf = sum(p.get("sacrifice_flies", 0) for p in players)
+        sum(p.get("plate_appearances", 0) for p in players)
+        sum(p.get("walks", 0) for p in players)
+        sum(p.get("sacrifice_flies", 0) for p in players)
 
         summary_data.append(
             {
                 "Team": team_name,
                 "Games Played": team_stats.get("games_played", 0),
                 "Total Players": len(players),
-                "Team PA": team_pa,
-                "Team BB": team_bb,
-                "Team SF": team_sf,
                 "Team BA": f"{team_stats.get('team_batting_average', 0):.3f}",
                 "Team OBP": f"{team_stats.get('team_on_base_percentage', 0):.3f}",
                 "Team SLG": f"{team_stats.get('team_slugging_percentage', 0):.3f}",
@@ -112,9 +109,6 @@ def _create_league_summary_sheet(
                 "Team": "No teams found",
                 "Games Played": 0,
                 "Total Players": 0,
-                "Team PA": 0,
-                "Team BB": 0,
-                "Team SF": 0,
                 "Team BA": "0.000",
                 "Team OBP": "0.000",
                 "Team SLG": "0.000",
@@ -127,14 +121,13 @@ def _create_league_summary_sheet(
 
     # Format the sheet
     worksheet = writer.sheets["League Summary"]
-    worksheet.column_dimensions["A"].width = 20
-    worksheet.column_dimensions["B"].width = 12
-    worksheet.column_dimensions["C"].width = 12
-    worksheet.column_dimensions["D"].width = 8  # Team PA
-    worksheet.column_dimensions["E"].width = 8  # Team BB
-    worksheet.column_dimensions["F"].width = 8  # Team SF
-    for col in ["G", "H", "I", "J"]:
-        worksheet.column_dimensions[col].width = 10
+    worksheet.column_dimensions["A"].width = 20  # Team
+    worksheet.column_dimensions["B"].width = 15  # Games Played
+    worksheet.column_dimensions["C"].width = 16  # Total Players
+    worksheet.column_dimensions["D"].width = 12  # Team BA
+    worksheet.column_dimensions["E"].width = 12  # Team OBP
+    worksheet.column_dimensions["F"].width = 12  # Team SLG
+    worksheet.column_dimensions["G"].width = 12  # Team OPS
 
 
 def _create_team_sheet(
