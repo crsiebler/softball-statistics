@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any, Dict, List, Optional
 
 from softball_statistics.calculators.stats_calculator import calculate_batting_stats
+from softball_statistics.interfaces import CommandRepository, QueryRepository
 from softball_statistics.models import (
     AtBatAttempt,
     Game,
@@ -16,10 +17,377 @@ from softball_statistics.models import (
     Team,
     Week,
 )
-from softball_statistics.repository.base import Repository
 
 
-class SQLiteRepository(Repository):
+class SQLiteCommandRepository(CommandRepository):
+    """SQLite implementation for command operations (writes)."""
+
+    def __init__(self, db_path: str):
+        """Initialize repository with database path."""
+        self.db_path = db_path
+        self._create_tables()
+
+    def _create_tables(self):
+        """Create all database tables."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS leagues (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    season TEXT NOT NULL,
+                    UNIQUE(name, season)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS teams (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    league_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    FOREIGN KEY (league_id) REFERENCES leagues(id),
+                    UNIQUE(league_id, name)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS players (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    team_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    FOREIGN KEY (team_id) REFERENCES teams(id),
+                    UNIQUE(team_id, name)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weeks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    league_id INTEGER NOT NULL,
+                    week_number INTEGER NOT NULL,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT NOT NULL,
+                    FOREIGN KEY (league_id) REFERENCES leagues(id),
+                    UNIQUE(league_id, week_number)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS games (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    week_id INTEGER NOT NULL,
+                    team_id INTEGER NOT NULL,
+                    game_number INTEGER NOT NULL,
+                    opponent TEXT,
+                    FOREIGN KEY (week_id) REFERENCES weeks(id),
+                    FOREIGN KEY (team_id) REFERENCES teams(id),
+                    UNIQUE(week_id, team_id, game_number)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS at_bat_attempts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    game_id INTEGER NOT NULL,
+                    player_id INTEGER NOT NULL,
+                    attempt_number INTEGER NOT NULL,
+                    outcome TEXT NOT NULL,
+                    bases INTEGER NOT NULL,
+                    rbis INTEGER NOT NULL,
+                    runs_scored INTEGER NOT NULL,
+                    FOREIGN KEY (game_id) REFERENCES games(id),
+                    FOREIGN KEY (player_id) REFERENCES players(id),
+                    UNIQUE(game_id, player_id, attempt_number)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS parsing_warnings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filename TEXT,
+                    row_num INTEGER,
+                    col_num INTEGER,
+                    player_name TEXT NOT NULL,
+                    original_attempt TEXT NOT NULL,
+                    assumption TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+    def _get_connection(self):
+        """Get database connection."""
+        return sqlite3.connect(self.db_path)
+
+    def save_game_data(self, objects: Dict[str, Any]) -> None:
+        """Save game data to database."""
+        with self._get_connection() as conn:
+            # Save league
+            league = objects["league"]
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR IGNORE INTO leagues (name, season) VALUES (?, ?)",
+                (league.name, league.season),
+            )
+            league_id = (
+                cursor.lastrowid
+                or cursor.execute(
+                    "SELECT id FROM leagues WHERE name = ? AND season = ?",
+                    (league.name, league.season),
+                ).fetchone()[0]
+            )
+
+            # Save team
+            team = objects["team"]
+            cursor.execute(
+                "INSERT OR IGNORE INTO teams (league_id, name) VALUES (?, ?)",
+                (league_id, team.name),
+            )
+            team_id = (
+                cursor.lastrowid
+                or cursor.execute(
+                    "SELECT id FROM teams WHERE league_id = ? AND name = ?",
+                    (league_id, team.name),
+                ).fetchone()[0]
+            )
+
+            # Save players
+            for player in objects["players"]:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO players (team_id, name) VALUES (?, ?)",
+                    (team_id, player.name),
+                )
+
+            # Save week
+            week = objects["week"]
+            cursor.execute(
+                "INSERT OR IGNORE INTO weeks (league_id, week_number, start_date, end_date) VALUES (?, ?, ?, ?)",
+                (
+                    league_id,
+                    week.week_number,
+                    week.start_date.isoformat(),
+                    week.end_date.isoformat(),
+                ),
+            )
+            week_id = (
+                cursor.lastrowid
+                or cursor.execute(
+                    "SELECT id FROM weeks WHERE league_id = ? AND week_number = ?",
+                    (league_id, week.week_number),
+                ).fetchone()[0]
+            )
+
+            # Save game
+            game = objects["game"]
+            cursor.execute(
+                "INSERT OR IGNORE INTO games (week_id, team_id, game_number, opponent) VALUES (?, ?, ?, ?)",
+                (week_id, team_id, game.game_number, game.opponent),
+            )
+            game_id = (
+                cursor.lastrowid
+                or cursor.execute(
+                    "SELECT id FROM games WHERE week_id = ? AND team_id = ? AND game_number = ?",
+                    (week_id, team_id, game.game_number),
+                ).fetchone()[0]
+            )
+
+            # Save attempts
+            for attempt in objects["attempts"]:
+                # Get player_id
+                cursor.execute(
+                    "SELECT id FROM players WHERE team_id = ? AND name = ?",
+                    (team_id, attempt.player_name),
+                )
+                player_row = cursor.fetchone()
+                if player_row:
+                    player_id = player_row[0]
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO at_bat_attempts
+                        (game_id, player_id, attempt_number, outcome, bases, rbis, runs_scored)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            game_id,
+                            player_id,
+                            attempt.attempt_number,
+                            attempt.outcome,
+                            attempt.bases,
+                            attempt.rbis,
+                            attempt.runs_scored,
+                        ),
+                    )
+
+    def save_parsing_warnings(self, warnings: list) -> None:
+        """Save parsing warnings to database."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            for warning in warnings:
+                cursor.execute(
+                    """
+                    INSERT INTO parsing_warnings
+                    (filename, row_num, col_num, player_name, original_attempt, assumption)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        warning.get("filename"),
+                        warning.get("row_num"),
+                        warning.get("col_num"),
+                        warning["player_name"],
+                        warning["original_attempt"],
+                        warning["assumption"],
+                    ),
+                )
+
+    def delete_game_data(self, league: str, team: str, season: str, game: str) -> None:
+        """Delete existing game data."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Find game_id
+            cursor.execute(
+                """
+                SELECT g.id FROM games g
+                JOIN weeks w ON g.week_id = w.id
+                JOIN teams t ON g.team_id = t.id
+                JOIN leagues l ON t.league_id = l.id
+                WHERE l.name = ? AND t.name = ? AND l.season = ? AND g.game_number = ?
+                """,
+                (league, team, season, int(game)),
+            )
+            game_row = cursor.fetchone()
+            if game_row:
+                game_id = game_row[0]
+                # Delete attempts
+                cursor.execute(
+                    "DELETE FROM at_bat_attempts WHERE game_id = ?", (game_id,)
+                )
+                # Delete game
+                cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
+
+
+class SQLiteQueryRepository(QueryRepository):
+    """SQLite implementation for query operations (reads)."""
+
+    def __init__(self, db_path: str):
+        """Initialize repository with database path."""
+        self.db_path = db_path
+
+    def _get_connection(self):
+        """Get database connection."""
+        return sqlite3.connect(self.db_path)
+
+    def game_exists(self, league: str, team: str, season: str, game: str) -> bool:
+        """Check if game already exists."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM games g
+                JOIN weeks w ON g.week_id = w.id
+                JOIN teams t ON g.team_id = t.id
+                JOIN leagues l ON t.league_id = l.id
+                WHERE l.name = ? AND t.name = ? AND l.season = ? AND g.game_number = ?
+                """,
+                (league, team, season, int(game)),
+            )
+            return cursor.fetchone()[0] > 0
+
+    def list_leagues(self) -> List[League]:
+        """List all leagues."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, season FROM leagues ORDER BY name, season")
+            return [
+                League(id=row[0], name=row[1], season=row[2])
+                for row in cursor.fetchall()
+            ]
+
+    def list_teams_by_league(self, league_id: int) -> List[Team]:
+        """List teams in a league."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, league_id, name FROM teams WHERE league_id = ?",
+                (league_id,),
+            )
+            return [
+                Team(id=row[0], league_id=row[1], name=row[2])
+                for row in cursor.fetchall()
+            ]
+
+    def get_player_stats(self, player_id: int) -> Optional[PlayerStats]:
+        """Get player statistics."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*) as at_bats,
+                    SUM(CASE WHEN outcome IN ('1B', '2B', '3B', 'HR') THEN 1 ELSE 0 END) as hits,
+                    SUM(CASE WHEN outcome = '1B' THEN 1 ELSE 0 END) as singles,
+                    SUM(CASE WHEN outcome = '2B' THEN 1 ELSE 0 END) as doubles,
+                    SUM(CASE WHEN outcome = '3B' THEN 1 ELSE 0 END) as triples,
+                    SUM(CASE WHEN outcome = 'HR' THEN 1 ELSE 0 END) as home_runs,
+                    SUM(rbis) as rbis,
+                    SUM(runs_scored) as runs_scored
+                FROM at_bat_attempts
+                WHERE player_id = ?
+                """,
+                (player_id,),
+            )
+            row = cursor.fetchone()
+            if row and row[0] > 0:  # at_bats > 0
+                stats = calculate_batting_stats(
+                    [
+                        {
+                            "outcome": attempt[0],
+                            "rbis": attempt[1],
+                            "runs_scored": attempt[2],
+                        }
+                        for attempt in cursor.execute(
+                            "SELECT outcome, rbis, runs_scored FROM at_bat_attempts WHERE player_id = ?",
+                            (player_id,),
+                        ).fetchall()
+                    ]
+                )
+                return PlayerStats(
+                    player_id=player_id,
+                    at_bats=row[0],
+                    hits=row[1],
+                    singles=row[2],
+                    doubles=row[3],
+                    triples=row[4],
+                    home_runs=row[5],
+                    rbis=row[6],
+                    runs_scored=row[7],
+                    batting_average=stats["batting_average"],
+                    on_base_percentage=stats["on_base_percentage"],
+                    slugging_percentage=stats["slugging_percentage"],
+                    ops=stats["ops"],
+                )
+            return None
+
+
+class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
+    """Combined SQLite repository for backwards compatibility."""
+
+    def __init__(self, db_path: str):
+        SQLiteCommandRepository.__init__(self, db_path)
+        SQLiteQueryRepository.__init__(self, db_path)
+
     """SQLite implementation of the repository."""
 
     def __init__(self, db_path: str):
@@ -85,11 +453,12 @@ class SQLiteRepository(Repository):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     week_id INTEGER NOT NULL,
                     team_id INTEGER NOT NULL,
-                    date DATE NOT NULL,
-                    opponent_team_id INTEGER,
+                    game_number INTEGER NOT NULL,
+                    date TEXT NOT NULL,
+                    opponent TEXT,
                     FOREIGN KEY (week_id) REFERENCES weeks(id),
                     FOREIGN KEY (team_id) REFERENCES teams(id),
-                    FOREIGN KEY (opponent_team_id) REFERENCES teams(id)
+                    UNIQUE(week_id, team_id, game_number)
                 )
             """
             )

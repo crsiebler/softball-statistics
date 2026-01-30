@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from softball_statistics.models import AtBatAttempt, Game, League, Player, Team, Week
+from softball_statistics.models.factories import (
+    LeagueFactory,
+    PlayerFactory,
+    TeamFactory,
+)
 from softball_statistics.parsers.attempt_parser import AttemptParseError, parse_attempt
+from softball_statistics.parsers.base import Parser
 from softball_statistics.parsers.filename_parser import (
     FilenameParseError,
     parse_filename,
@@ -21,6 +27,14 @@ class CSVParseError(Exception):
     """Raised when CSV parsing fails."""
 
     pass
+
+
+class CSVParser(Parser):
+    """CSV parser implementing Parser interface."""
+
+    def parse(self, file_path: str) -> Dict[str, Any]:
+        """Parse a CSV file."""
+        return parse_csv_file(file_path)
 
 
 def parse_csv_file(file_path: str) -> Dict[str, Any]:
@@ -136,13 +150,19 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
     attempts = parsed_data["attempts"]
 
     # Create league
-    league = League(id=None, name=metadata["league"], season=metadata["season"])
+    league = LeagueFactory.create_league(
+        {
+            "name": metadata["league"],
+            "season": metadata["season"],
+        }
+    )
 
     # Create team
-    team = Team(
-        id=None,
-        league_id=None,  # Will be set after league is saved
-        name=metadata["team"],
+    team = TeamFactory.create_team(
+        {
+            "league_id": None,  # Will be set after league is saved
+            "name": metadata["team"],
+        }
     )
 
     # Create week (simplified - just create one week for now)
@@ -176,10 +196,11 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         player_name = attempt_data["player_name"]
 
         if player_name not in players:
-            players[player_name] = Player(
-                id=None,
-                team_id=None,  # Will be set after team is saved
-                name=player_name,
+            players[player_name] = PlayerFactory.create_player(
+                {
+                    "team_id": None,  # Will be set after team is saved
+                    "name": player_name,
+                }
             )
 
         # Create at-bat attempt

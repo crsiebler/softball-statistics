@@ -19,6 +19,14 @@ class ExcelExportError(Exception):
     pass
 
 
+class ExcelExporter:
+    """Excel exporter implementing Exporter interface."""
+
+    def export(self, data: Dict[str, Any], output_path: str) -> None:
+        """Export data to Excel."""
+        export_to_excel(data, output_path)
+
+
 def export_to_excel(stats_data: Dict[str, Any], output_path: str) -> None:
     """
     Export softball statistics to an Excel file with multiple sheets.
