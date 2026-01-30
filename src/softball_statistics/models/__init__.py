@@ -84,8 +84,8 @@ class Game:
 
 
 @dataclass
-class AtBatAttempt:
-    """Represents a single at-bat attempt."""
+class PlateAppearance:
+    """Represents a single plate appearance."""
 
     id: Optional[int]
     player_id: Optional[int]
@@ -125,6 +125,9 @@ class PlayerStats:
     on_base_percentage: float = 0.0
     slugging_percentage: float = 0.0
     ops: float = 0.0
+    plate_appearances: int = 0
+    walks: int = 0
+    sacrifice_flies: int = 0
 
     def __post_init__(self):
         if self.player_id < 1:
@@ -138,6 +141,9 @@ class PlayerStats:
             "home_runs",
             "rbis",
             "runs_scored",
+            "plate_appearances",
+            "walks",
+            "sacrifice_flies",
         ]:
             if getattr(self, field) < 0:
                 raise ValueError(f"{field} cannot be negative")

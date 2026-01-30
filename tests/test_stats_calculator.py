@@ -86,6 +86,7 @@ class TestStatsCalculator:
             runs_scored=1,
             hbp=0,
             sf=0,
+            plate_appearances=12,
         )
 
         expected = {
@@ -103,6 +104,8 @@ class TestStatsCalculator:
             "on_base_percentage": 0.417,  # (3+2+0)/(10+2+0+0) = 5/12
             "slugging_percentage": 0.400,  # (2*1 + 1*2 + 0*3 + 0*4)/10 = 4/10
             "ops": 0.817,  # 0.417 + 0.400
+            "plate_appearances": 12,
+            "sacrifice_flies": 0,
         }
 
         assert stats == expected
@@ -122,6 +125,7 @@ class TestStatsCalculator:
             runs_scored=4,
             hbp=0,
             sf=0,
+            plate_appearances=4,
         )
 
         assert stats["batting_average"] == 1.000
@@ -143,6 +147,7 @@ class TestStatsCalculator:
             runs_scored=0,
             hbp=0,
             sf=0,
+            plate_appearances=0,
         )
 
         assert stats["batting_average"] == 0.000

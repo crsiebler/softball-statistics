@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 from softball_statistics.models import (
-    AtBatAttempt,
     Game,
     League,
+    PlateAppearance,
     Player,
     PlayerStats,
     Team,
@@ -76,8 +76,8 @@ class Repository(ABC):
         """Delete all data for a specific game."""
 
     @abstractmethod
-    def save_at_bat(self, attempt: AtBatAttempt) -> int:
-        """Save an at-bat attempt and return its ID."""
+    def save_plate_appearance(self, attempt: PlateAppearance) -> int:
+        """Save a plate appearance and return its ID."""
 
     @abstractmethod
     def get_player_stats(

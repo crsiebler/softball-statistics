@@ -126,6 +126,9 @@ class CalculateStatsUseCase:
                         "on_base_percentage": stats.on_base_percentage,
                         "slugging_percentage": stats.slugging_percentage,
                         "ops": stats.ops,
+                        "plate_appearances": stats.plate_appearances,
+                        "walks": stats.walks,
+                        "sacrifice_flies": stats.sacrifice_flies,
                     }
                     players_data.append(player_stats_dict)
 

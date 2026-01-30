@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Optional
 from softball_statistics.calculators.stats_calculator import calculate_batting_stats
 from softball_statistics.interfaces import CommandRepository, QueryRepository
 from softball_statistics.models import (
-    AtBatAttempt,
     Game,
     League,
+    PlateAppearance,
     Player,
     PlayerStats,
     Team,
@@ -29,104 +29,6 @@ class SQLiteCommandRepository(CommandRepository):
 
     def _create_tables(self):
         """Create all database tables."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS leagues (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    season TEXT NOT NULL,
-                    UNIQUE(name, season)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS teams (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    league_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    FOREIGN KEY (league_id) REFERENCES leagues(id),
-                    UNIQUE(league_id, name)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS players (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    team_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    FOREIGN KEY (team_id) REFERENCES teams(id),
-                    UNIQUE(team_id, name)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS weeks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    league_id INTEGER NOT NULL,
-                    week_number INTEGER NOT NULL,
-                    start_date TEXT NOT NULL,
-                    end_date TEXT NOT NULL,
-                    FOREIGN KEY (league_id) REFERENCES leagues(id),
-                    UNIQUE(league_id, week_number)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS games (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    week_id INTEGER NOT NULL,
-                    team_id INTEGER NOT NULL,
-                    game_number INTEGER NOT NULL,
-                    opponent_team_id INTEGER,
-                    FOREIGN KEY (week_id) REFERENCES weeks(id),
-                    FOREIGN KEY (team_id) REFERENCES teams(id),
-                    FOREIGN KEY (opponent_team_id) REFERENCES teams(id),
-                    UNIQUE(week_id, team_id, game_number)
-                )
-                """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS at_bat_attempts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    game_id INTEGER NOT NULL,
-                    player_id INTEGER NOT NULL,
-                    attempt_number INTEGER NOT NULL,
-                    outcome TEXT NOT NULL,
-                    bases INTEGER NOT NULL,
-                    rbis INTEGER NOT NULL,
-                    runs_scored INTEGER NOT NULL,
-                    FOREIGN KEY (game_id) REFERENCES games(id),
-                    FOREIGN KEY (player_id) REFERENCES players(id),
-                    UNIQUE(game_id, player_id, attempt_number)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS parsing_warnings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filename TEXT,
-                    row_num INTEGER,
-                    col_num INTEGER,
-                    player_name TEXT NOT NULL,
-                    original_attempt TEXT NOT NULL,
-                    assumption TEXT NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
 
     def _get_connection(self):
         """Get database connection."""
@@ -216,67 +118,19 @@ class SQLiteCommandRepository(CommandRepository):
                     player_id = player_row[0]
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO at_bat_attempts
-                        (game_id, player_id, attempt_number, outcome, bases, rbis, runs_scored)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT OR REPLACE INTO plate_appearances
+                        (player_id, game_id, outcome, bases, rbis, runs_scored)
+                        VALUES (?, ?, ?, ?, ?, ?)
                         """,
                         (
-                            game_id,
                             player_id,
-                            attempt["attempt_number"],
+                            game_id,
                             attempt["outcome"],
                             attempt["bases"],
                             attempt["rbis"],
                             attempt["runs_scored"],
                         ),
                     )
-
-    def save_parsing_warnings(self, warnings: list) -> None:
-        """Save parsing warnings to database."""
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            for warning in warnings:
-                cursor.execute(
-                    """
-                    INSERT INTO parsing_warnings
-                    (filename, row_num, col_num, player_name, original_attempt, assumption)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        warning.get("filename"),
-                        warning.get("row_num"),
-                        warning.get("col_num"),
-                        warning["player_name"],
-                        warning["original_attempt"],
-                        warning["assumption"],
-                    ),
-                )
-
-    def delete_game_data(self, league: str, team: str, season: str, game: str) -> None:
-        """Delete existing game data."""
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-
-            # Find game_id
-            cursor.execute(
-                """
-                SELECT g.id FROM games g
-                JOIN weeks w ON g.week_id = w.id
-                JOIN teams t ON g.team_id = t.id
-                JOIN leagues l ON t.league_id = l.id
-                WHERE l.name = ? AND t.name = ? AND l.season = ? AND g.game_number = ?
-                """,
-                (league, team, season, int(game)),
-            )
-            game_row = cursor.fetchone()
-            if game_row:
-                game_id = game_row[0]
-                # Delete attempts
-                cursor.execute(
-                    "DELETE FROM at_bat_attempts WHERE game_id = ?", (game_id,)
-                )
-                # Delete game
-                cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
 
 
 class SQLiteQueryRepository(QueryRepository):
@@ -336,7 +190,7 @@ class SQLiteQueryRepository(QueryRepository):
 
             # Get all attempts for this player
             cursor.execute(
-                "SELECT outcome, bases, rbis, runs_scored FROM at_bat_attempts WHERE player_id = ?",
+                "SELECT outcome, bases, rbis, runs_scored FROM plate_appearances WHERE player_id = ?",
                 (player_id,),
             )
 
@@ -395,6 +249,7 @@ class SQLiteQueryRepository(QueryRepository):
                 strikeouts=strikeouts,
                 rbis=rbis,
                 runs_scored=runs_scored,
+                plate_appearances=total_attempts,
             )
 
             return PlayerStats(
@@ -421,16 +276,24 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
         SQLiteCommandRepository.__init__(self, db_path)
         SQLiteQueryRepository.__init__(self, db_path)
 
-    """SQLite implementation of the repository."""
-
-    def __init__(self, db_path: str):
-        """Initialize repository with database path."""
-        self.db_path = db_path
-        self._create_tables()
-
     def _create_tables(self):
         """Create all database tables."""
         with sqlite3.connect(self.db_path) as conn:
+            # Drop existing tables to recreate fresh
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS parsing_warnings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_name TEXT NOT NULL,
+                    row_num INTEGER NOT NULL,
+                    col_num INTEGER NOT NULL,
+                    filename TEXT NOT NULL,
+                    original_attempt TEXT NOT NULL,
+                    assumption TEXT NOT NULL
+                )
+            """
+            )
+
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS leagues (
@@ -488,17 +351,17 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                     team_id INTEGER NOT NULL,
                     game_number INTEGER NOT NULL,
                     date TEXT NOT NULL,
-                    opponent TEXT,
+                    opponent_team_id INTEGER,
                     FOREIGN KEY (week_id) REFERENCES weeks(id),
                     FOREIGN KEY (team_id) REFERENCES teams(id),
                     UNIQUE(week_id, team_id, game_number)
                 )
-            """
+                """
             )
 
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS at_bats (
+                CREATE TABLE IF NOT EXISTS plate_appearances (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     player_id INTEGER NOT NULL,
                     game_id INTEGER NOT NULL,
@@ -512,23 +375,8 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             """
             )
 
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS parsing_warnings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_name TEXT NOT NULL,
-                    row_num INTEGER,
-                    col_num INTEGER,
-                    filename TEXT,
-                    original_attempt TEXT NOT NULL,
-                    assumption TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
-
     def _get_connection(self):
-        """Get a database connection."""
+        """Get database connection."""
         return sqlite3.connect(self.db_path)
 
     def save_league(self, league: League) -> int:
@@ -537,10 +385,20 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             cursor = conn.cursor()
             if league.id is None:
                 cursor.execute(
-                    "INSERT INTO leagues (name, season) VALUES (?, ?)",
+                    "INSERT OR IGNORE INTO leagues (name, season) VALUES (?, ?)",
                     (league.name, league.season),
                 )
-                return cursor.lastrowid
+                league_id = cursor.lastrowid
+                if (
+                    league_id == 0 or league_id is None
+                ):  # Already exists, get the existing ID
+                    cursor.execute(
+                        "SELECT id FROM leagues WHERE name = ? AND season = ?",
+                        (league.name, league.season),
+                    )
+                    existing = cursor.fetchone()
+                    league_id = existing[0] if existing else 0
+                return int(league_id)  # type: ignore
             else:
                 cursor.execute(
                     "UPDATE leagues SET name = ?, season = ? WHERE id = ?",
@@ -576,10 +434,20 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             cursor = conn.cursor()
             if team.id is None:
                 cursor.execute(
-                    "INSERT INTO teams (league_id, name) VALUES (?, ?)",
+                    "INSERT OR IGNORE INTO teams (league_id, name) VALUES (?, ?)",
                     (team.league_id, team.name),
                 )
-                return cursor.lastrowid
+                team_id = cursor.lastrowid
+                if (
+                    team_id == 0 or team_id is None
+                ):  # Already exists, get the existing ID
+                    cursor.execute(
+                        "SELECT id FROM teams WHERE league_id = ? AND name = ?",
+                        (team.league_id, team.name),
+                    )
+                    existing = cursor.fetchone()
+                    team_id = existing[0] if existing else 0
+                return int(team_id)  # type: ignore
             else:
                 cursor.execute(
                     "UPDATE teams SET league_id = ?, name = ? WHERE id = ?",
@@ -618,10 +486,20 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             cursor = conn.cursor()
             if player.id is None:
                 cursor.execute(
-                    "INSERT INTO players (team_id, name) VALUES (?, ?)",
+                    "INSERT OR IGNORE INTO players (team_id, name) VALUES (?, ?)",
                     (player.team_id, player.name),
                 )
-                return cursor.lastrowid
+                player_id = cursor.lastrowid
+                if (
+                    player_id == 0 or player_id is None
+                ):  # Already exists, get the existing ID
+                    cursor.execute(
+                        "SELECT id FROM players WHERE team_id = ? AND name = ?",
+                        (player.team_id, player.name),
+                    )
+                    existing = cursor.fetchone()
+                    player_id = existing[0] if existing else 0
+                return int(player_id)  # type: ignore
             else:
                 cursor.execute(
                     "UPDATE players SET team_id = ?, name = ? WHERE id = ?",
@@ -647,7 +525,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             cursor = conn.cursor()
             if week.id is None:
                 cursor.execute(
-                    "INSERT INTO weeks (league_id, week_number, start_date, end_date) VALUES (?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO weeks (league_id, week_number, start_date, end_date) VALUES (?, ?, ?, ?)",
                     (
                         week.league_id,
                         week.week_number,
@@ -655,7 +533,17 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                         week.end_date.isoformat(),
                     ),
                 )
-                return cursor.lastrowid
+                week_id = cursor.lastrowid
+                if (
+                    week_id == 0 or week_id is None
+                ):  # Already exists, get the existing ID
+                    cursor.execute(
+                        "SELECT id FROM weeks WHERE league_id = ? AND week_number = ?",
+                        (week.league_id, week.week_number),
+                    )
+                    existing = cursor.fetchone()
+                    week_id = existing[0] if existing else 0
+                return int(week_id)  # type: ignore
             else:
                 cursor.execute(
                     "UPDATE weeks SET league_id = ?, week_number = ?, start_date = ?, end_date = ? WHERE id = ?",
@@ -694,23 +582,25 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             cursor = conn.cursor()
             if game.id is None:
                 cursor.execute(
-                    "INSERT INTO games (week_id, team_id, date, opponent_team_id) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO games (week_id, team_id, date, opponent_team_id, game_number) VALUES (?, ?, ?, ?, ?)",
                     (
                         game.week_id,
                         game.team_id,
                         game.date.isoformat(),
                         game.opponent_team_id,
+                        game.game_number,
                     ),
                 )
-                return cursor.lastrowid
+                return int(cursor.lastrowid)  # type: ignore
             else:
                 cursor.execute(
-                    "UPDATE games SET week_id = ?, team_id = ?, date = ?, opponent_team_id = ? WHERE id = ?",
+                    "UPDATE games SET week_id = ?, team_id = ?, date = ?, opponent_team_id = ?, game_number = ? WHERE id = ?",
                     (
                         game.week_id,
                         game.team_id,
                         game.date.isoformat(),
                         game.opponent_team_id,
+                        game.game_number,
                         game.id,
                     ),
                 )
@@ -774,8 +664,10 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
 
             game_id = game_row[0]
 
-            # Delete at-bats for this game
-            cursor.execute("DELETE FROM at_bats WHERE game_id = ?", (game_id,))
+            # Delete plate appearances for this game
+            cursor.execute(
+                "DELETE FROM plate_appearances WHERE game_id = ?", (game_id,)
+            )
 
             # Delete the game
             cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
@@ -783,13 +675,13 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             # Note: We don't delete leagues, teams, weeks, or players as they might be used by other games
             # In a more sophisticated system, you might implement cascading deletes or cleanup logic
 
-    def save_at_bat(self, attempt: AtBatAttempt) -> int:
+    def save_plate_appearance(self, attempt: PlateAppearance) -> int:
         """Save an at-bat attempt and return its ID."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             if attempt.id is None:
                 cursor.execute(
-                    "INSERT INTO at_bats (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO plate_appearances (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         attempt.player_id,
                         attempt.game_id,
@@ -799,10 +691,10 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                         attempt.runs_scored,
                     ),
                 )
-                return cursor.lastrowid
+                return int(cursor.lastrowid)  # type: ignore
             else:
                 cursor.execute(
-                    "UPDATE at_bats SET player_id = ?, game_id = ?, outcome = ?, bases = ?, rbis = ?, runs_scored = ? WHERE id = ?",
+                    "UPDATE plate_appearances SET player_id = ?, game_id = ?, outcome = ?, bases = ?, rbis = ?, runs_scored = ? WHERE id = ?",
                     (
                         attempt.player_id,
                         attempt.game_id,
@@ -828,7 +720,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 cursor.execute(
                     """
                     SELECT ab.outcome, ab.bases, ab.rbis, ab.runs_scored
-                    FROM at_bats ab
+                    FROM plate_appearances ab
                     JOIN games g ON ab.game_id = g.id
                     WHERE ab.player_id = ? AND g.week_id = ?
                 """,
@@ -839,7 +731,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 cursor.execute(
                     """
                     SELECT outcome, bases, rbis, runs_scored
-                    FROM at_bats
+                    FROM plate_appearances
                     WHERE player_id = ?
                 """,
                     (player_id,),
@@ -860,7 +752,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             strikeouts = 0
             rbis = 0
             runs_scored = 0
-            sacrifices = 0
+            sacrifice_flies = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
                 outcome_lower = outcome.lower()
@@ -881,12 +773,12 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                         triples += 1
                     elif bases == 4:
                         home_runs += 1
-                elif attempt_rbis > 0:
-                    # Sacrifice: out with RBIs
-                    sacrifices += 1
+                elif attempt_rbis > 0 and outcome.startswith("F"):
+                    # Sacrifice Fly: fly ball out with RBIs
+                    sacrifice_flies += 1
 
-            # At-bats = total attempts - walks - sacrifices
-            at_bats = total_attempts - walks - sacrifices
+            # At-bats = total attempts - walks - sacrifice_flies
+            at_bats = total_attempts - walks - sacrifice_flies
 
             # Calculate advanced stats
             stats_dict = calculate_batting_stats(
@@ -900,6 +792,8 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 strikeouts=strikeouts,
                 rbis=rbis,
                 runs_scored=runs_scored,
+                plate_appearances=total_attempts,
+                sf=sacrifice_flies,
             )
 
             return PlayerStats(
@@ -916,11 +810,14 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 on_base_percentage=stats_dict["on_base_percentage"],
                 slugging_percentage=stats_dict["slugging_percentage"],
                 ops=stats_dict["ops"],
+                plate_appearances=int(stats_dict["plate_appearances"]),
+                walks=walks,
+                sacrifice_flies=sacrifice_flies,
             )
 
     def save_game_data(self, objects: Dict[str, Any]) -> None:
         """Save all game data objects in the correct order."""
-        # Save in dependency order: league -> team -> week -> game -> players -> at_bats
+        # Save in dependency order: league -> team -> week -> game -> players -> plate_appearances
 
         # Save league
         league = objects["league"]
@@ -954,10 +851,10 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             player.id = player_id
             player_id_map[player.name] = player_id
 
-        # Update at-bats with player_id and game_id and save
-        for attempt_data in objects["attempts"]:
+        # Update plate appearances with player_id and game_id and save
+        for attempt_data in objects["plate_appearances"]:
             player_id = player_id_map[attempt_data["player_name"]]
-            attempt = AtBatAttempt(
+            attempt = PlateAppearance(
                 id=None,
                 player_id=player_id,
                 game_id=game_id,
@@ -966,7 +863,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 rbis=attempt_data["rbis"],
                 runs_scored=attempt_data["runs_scored"],
             )
-            self.save_at_bat(attempt)
+            self.save_plate_appearance(attempt)
 
     def save_parsing_warnings(self, warnings: List[Dict[str, Any]]) -> None:
         """Save parsing warnings to the database."""

@@ -3,9 +3,9 @@ from datetime import date
 import pytest
 
 from softball_statistics.models import (
-    AtBatAttempt,
     Game,
     League,
+    PlateAppearance,
     Player,
     PlayerStats,
     Team,
@@ -116,9 +116,9 @@ class TestGame:
             Game(id=1, week_id=0, team_id=1, date=game_date)
 
 
-class TestAtBatAttempt:
+class TestPlateAppearance:
     def test_valid_attempt(self):
-        attempt = AtBatAttempt(
+        attempt = PlateAppearance(
             id=1, player_id=1, game_id=1, outcome="2B*", bases=2, rbis=1, runs_scored=0
         )
         assert attempt.id == 1
@@ -131,15 +131,15 @@ class TestAtBatAttempt:
 
     def test_attempt_missing_outcome(self):
         with pytest.raises(ValueError, match="Outcome is required"):
-            AtBatAttempt(id=1, player_id=1, game_id=1, outcome="")
+            PlateAppearance(id=1, player_id=1, game_id=1, outcome="")
 
     def test_attempt_invalid_bases(self):
         with pytest.raises(ValueError, match="Bases must be between 0 and 4"):
-            AtBatAttempt(id=1, player_id=1, game_id=1, outcome="HR", bases=5)
+            PlateAppearance(id=1, player_id=1, game_id=1, outcome="HR", bases=5)
 
     def test_attempt_negative_rbis(self):
         with pytest.raises(ValueError, match="RBIs and runs scored cannot be negative"):
-            AtBatAttempt(id=1, player_id=1, game_id=1, outcome="1B", rbis=-1)
+            PlateAppearance(id=1, player_id=1, game_id=1, outcome="1B", rbis=-1)
 
 
 class TestPlayerStats:

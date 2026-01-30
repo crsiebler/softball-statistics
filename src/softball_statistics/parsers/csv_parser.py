@@ -43,7 +43,7 @@ def parse_csv_file(file_path: str) -> Dict[str, Any]:
         file_path: Path to the CSV file
 
     Returns:
-        Dictionary containing parsed metadata and attempts
+        Dictionary containing parsed metadata and plate appearances
 
     Raises:
         CSVParseError: If parsing fails
@@ -71,7 +71,7 @@ def parse_csv_file(file_path: str) -> Dict[str, Any]:
 
             if not headers or len(headers) < 2:
                 raise CSVParseError(
-                    "CSV must have at least 2 columns (Player Name + attempts)"
+                    "CSV must have at least 2 columns (Player Name + plate appearances)"
                 )
 
             if headers[0].strip().lower() != "player name":
@@ -129,8 +129,8 @@ def parse_csv_file(file_path: str) -> Dict[str, Any]:
     return {
         "metadata": metadata,
         "player_names": sorted(list(player_names)),
-        "attempts": attempts,
-        "total_attempts": len(attempts),
+        "plate_appearances": attempts,
+        "total_plate_appearances": len(attempts),
         "warnings": all_warnings,
     }
 
@@ -146,7 +146,7 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with lists of objects to save
     """
     metadata = parsed_data["metadata"]
-    attempts = parsed_data["attempts"]
+    attempts = parsed_data["plate_appearances"]
 
     # Create league
     league = LeagueFactory.create_league(
@@ -198,7 +198,7 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Create players (we'll create them as we encounter them)
     players = {}
-    at_bat_attempts = []
+    plate_appearances = []
 
     for attempt_data in attempts:
         player_name = attempt_data["player_name"]
@@ -220,7 +220,7 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
             "runs_scored": attempt_data["runs_scored"],
             "attempt_number": attempt_data["attempt_number"],
         }
-        at_bat_attempts.append(at_bat)
+        plate_appearances.append(at_bat)
 
     return {
         "league": league,
@@ -228,5 +228,5 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         "week": week,
         "game": game,
         "players": list(players.values()),
-        "attempts": at_bat_attempts,
+        "plate_appearances": plate_appearances,
     }

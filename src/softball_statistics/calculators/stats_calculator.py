@@ -93,8 +93,10 @@ def calculate_batting_stats(
     strikeouts: int,
     rbis: int,
     runs_scored: int,
+    plate_appearances: int,
     hbp: int = 0,
     sf: int = 0,
+    sh: int = 0,
 ) -> Dict[str, float]:
     """
     Calculate all batting statistics for a player.
@@ -110,8 +112,10 @@ def calculate_batting_stats(
         strikeouts: Number of strikeouts
         rbis: Number of RBIs
         runs_scored: Number of runs scored
+        plate_appearances: Number of plate appearances
         hbp: Number of hit-by-pitches (default 0)
         sf: Number of sacrifice flies (default 0)
+        sh: Number of sacrifice hits (default 0)
 
     Returns:
         Dictionary with all calculated statistics
@@ -136,4 +140,6 @@ def calculate_batting_stats(
         "on_base_percentage": obp,
         "slugging_percentage": slg,
         "ops": ops,
+        "plate_appearances": plate_appearances,
+        "sacrifice_flies": sf,
     }

@@ -150,11 +150,13 @@ Examples:
 
         print("Wiping database...")
         # Clear all data
-        with self.command_repo._get_connection() as conn:
+
+        sqlite_repo = self.command_repo  # type: ignore
+        with sqlite_repo._get_connection() as conn:  # type: ignore
             cursor = conn.cursor()
             # Delete in reverse dependency order
             cursor.execute("DELETE FROM parsing_warnings")
-            cursor.execute("DELETE FROM at_bats")
+            cursor.execute("DELETE FROM plate_appearances")
             cursor.execute("DELETE FROM games")
             cursor.execute("DELETE FROM players")
             cursor.execute("DELETE FROM weeks")
@@ -240,6 +242,9 @@ Examples:
                 from softball_statistics.parsers.filename_parser import parse_filename
 
                 metadata = parse_filename(Path(file_path).name)
+                assert metadata["league"] is not None
+                assert metadata["team"] is not None
+                assert metadata["season"] is not None
                 response = input(
                     f"Game {metadata['league']}-{metadata['team']}-{metadata['season']}-{metadata['game']} already exists. Replace? (y/N): "
                 )
@@ -269,18 +274,14 @@ def main():
     """Main CLI entry point."""
     # TODO: Use DI container or factory to inject dependencies
     # For now, hardcoded for transition
-    from softball_statistics.repository.sqlite import (
-        SQLiteCommandRepository,
-        SQLiteQueryRepository,
-    )
+    from softball_statistics.repository.sqlite import SQLiteRepository
 
     db_path = "stats.db"
-    command_repo = SQLiteCommandRepository(db_path)
-    query_repo = SQLiteQueryRepository(db_path)
+    repo = SQLiteRepository(db_path)  # type: ignore
     parser = CSVParser()
-    exporter = ExcelExporter(query_repo)
+    exporter = ExcelExporter(repo)
 
-    cli = CLI(command_repo, query_repo, parser, exporter)
+    cli = CLI(repo, repo, parser, exporter)
     cli.run()
 
 

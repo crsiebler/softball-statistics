@@ -25,7 +25,7 @@ class TestSQLiteRepository:
                 "players",
                 "weeks",
                 "games",
-                "at_bats",
+                "plate_appearances",
                 "parsing_warnings",
             ]
             for table in expected_tables:

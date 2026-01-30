@@ -38,10 +38,10 @@ Bryce,F4,BB,1B+
             assert "Anthony" in result["player_names"]
             assert "Bryce" in result["player_names"]
 
-            assert len(result["attempts"]) == 6  # 2 players × 3 attempts each
+            assert len(result["plate_appearances"]) == 6  # 2 players × 3 attempts each
 
             # Check first attempt
-            attempt1 = result["attempts"][0]
+            attempt1 = result["plate_appearances"][0]
             assert attempt1["player_name"] == "Anthony"
             assert attempt1["outcome"] == "1B"
             assert attempt1["bases"] == 1
@@ -67,18 +67,18 @@ Player2,K+,F8*,BB
             try:
                 result = parse_csv_file(f.name)
 
-                assert len(result["attempts"]) == 6
+                assert len(result["plate_appearances"]) == 6
 
                 # Check complex attempts
                 hr_attempt = next(
-                    a for a in result["attempts"] if a["outcome"] == "HR**"
+                    a for a in result["plate_appearances"] if a["outcome"] == "HR**"
                 )
                 assert hr_attempt["bases"] == 4
                 assert hr_attempt["rbis"] == 2
                 assert hr_attempt["runs_scored"] == 0
 
                 triple_attempt = next(
-                    a for a in result["attempts"] if a["outcome"] == "3B*+"
+                    a for a in result["plate_appearances"] if a["outcome"] == "3B*+"
                 )
                 assert triple_attempt["bases"] == 3
                 assert triple_attempt["rbis"] == 1
@@ -176,7 +176,7 @@ Player1,INVALID
                 "game": "01",
             },
             "player_names": ["Player1", "Player2"],
-            "attempts": [
+            "plate_appearances": [
                 {
                     "player_name": "Player1",
                     "outcome": "1B",
@@ -205,7 +205,7 @@ Player1,INVALID
         assert objects["team"].id is None
         assert objects["team"].league_id is None  # Will be set after league save
         assert len(objects["players"]) == 2
-        assert len(objects["attempts"]) == 2
+        assert len(objects["plate_appearances"]) == 2
 
         # Check player names
         player_names = [p.name for p in objects["players"]]
@@ -250,7 +250,7 @@ Player2,1B,HR**
 
                 # Check that HR** has no warning (explicit RBIs)
                 hr_double_star = next(
-                    a for a in result["attempts"] if a["outcome"] == "HR**"
+                    a for a in result["plate_appearances"] if a["outcome"] == "HR**"
                 )
                 assert hr_double_star["rbis"] == 2
 
