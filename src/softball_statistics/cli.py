@@ -6,8 +6,15 @@ import sys
 import argparse
 from pathlib import Path
 from softball_statistics.repository.sqlite import SQLiteRepository
-from softball_statistics.parsers.csv_parser import parse_csv_file, create_database_objects, CSVParseError
-from softball_statistics.exporters.excel_exporter import export_to_excel, ExcelExportError
+from softball_statistics.parsers.csv_parser import (
+    parse_csv_file,
+    create_database_objects,
+    CSVParseError,
+)
+from softball_statistics.exporters.excel_exporter import (
+    export_to_excel,
+    ExcelExportError,
+)
 
 
 def main():
@@ -17,47 +24,39 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  softball-stats --file fray-cyclones-winter-01.csv --output stats.xlsx
+  softball-stats --file fray-cyclones-winter-01.csv --output data/output/stats.xlsx
   softball-stats --list-leagues
   softball-stats --list-teams --league "fray"
-        """
+        """,
     )
 
     parser.add_argument(
-        '--file',
+        "--file",
         type=str,
-        help='CSV file to process (with format: league-team-season-game.csv)'
+        help="CSV file to process (with format: league-team-season-game.csv)",
     )
 
     parser.add_argument(
-        '--output',
+        "--output",
         type=str,
-        default='stats.xlsx',
-        help='Output Excel file path (default: stats.xlsx)'
+        default="data/output/stats.xlsx",
+        help="Output Excel file path (default: data/output/stats.xlsx)",
     )
 
     parser.add_argument(
-        '--list-leagues',
-        action='store_true',
-        help='List all leagues in the database'
+        "--list-leagues", action="store_true", help="List all leagues in the database"
     )
 
     parser.add_argument(
-        '--list-teams',
-        action='store_true',
-        help='List teams (requires --league)'
+        "--list-teams", action="store_true", help="List teams (requires --league)"
     )
 
-    parser.add_argument(
-        '--league',
-        type=str,
-        help='League name for --list-teams'
-    )
+    parser.add_argument("--league", type=str, help="League name for --list-teams")
 
     args = parser.parse_args()
 
     # Initialize repository
-    repo = SQLiteRepository('softball_stats.db')
+    repo = SQLiteRepository("softball_stats.db")
 
     try:
         if args.list_leagues:
@@ -121,23 +120,32 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
         objects = create_database_objects(parsed_data)
 
         # Check if game already exists
-        metadata = parsed_data['metadata']
-        if repo.game_exists(metadata['league'], metadata['team'], metadata['season'], metadata['game']):
-            response = input(f"Game {metadata['league']}-{metadata['team']}-{metadata['season']}-{metadata['game']} already exists. Replace? (y/N): ")
-            if response.lower() not in ['y', 'yes']:
+        metadata = parsed_data["metadata"]
+        if repo.game_exists(
+            metadata["league"], metadata["team"], metadata["season"], metadata["game"]
+        ):
+            response = input(
+                f"Game {metadata['league']}-{metadata['team']}-{metadata['season']}-{metadata['game']} already exists. Replace? (y/N): "
+            )
+            if response.lower() not in ["y", "yes"]:
                 print("Operation cancelled.")
                 return
 
             # Delete existing data
             print("Removing existing game data...")
-            repo.delete_game_data(metadata['league'], metadata['team'], metadata['season'], metadata['game'])
+            repo.delete_game_data(
+                metadata["league"],
+                metadata["team"],
+                metadata["season"],
+                metadata["game"],
+            )
 
         # Save to repository
         print("Saving to database...")
         repo.save_game_data(objects)
 
         # Save parsing warnings
-        warnings = parsed_data.get('warnings', [])
+        warnings = parsed_data.get("warnings", [])
         if warnings:
             print(f"Saving {len(warnings)} parsing warning(s)...")
             repo.save_parsing_warnings(warnings)
@@ -148,17 +156,26 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
         # Get all stats for export
         # Find the team and get player stats
         leagues = repo.list_leagues()
-        league = next((l for l in leagues if l.name == metadata['league'] and l.season == metadata['season']), None)
+        league = next(
+            (
+                l
+                for l in leagues
+                if l.name == metadata["league"] and l.season == metadata["season"]
+            ),
+            None,
+        )
         team_stats = {}
         if league and league.id:
             teams = repo.list_teams_by_league(league.id)
-            team = next((t for t in teams if t.name == metadata['team']), None)
+            team = next((t for t in teams if t.name == metadata["team"]), None)
             if team and team.id:
                 # Get all players for this team and their stats
                 players_data = []
                 with repo._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT id, name FROM players WHERE team_id = ?', (team.id,))
+                    cursor.execute(
+                        "SELECT id, name FROM players WHERE team_id = ?", (team.id,)
+                    )
                     players = cursor.fetchall()
 
                 for player_id, player_name in players:
@@ -166,34 +183,34 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
                     if stats:
                         # Create a modified PlayerStats with name
                         player_stats_dict = {
-                            'player_id': player_id,
-                            'player_name': player_name,
-                            'at_bats': stats.at_bats,
-                            'hits': stats.hits,
-                            'singles': stats.singles,
-                            'doubles': stats.doubles,
-                            'triples': stats.triples,
-                            'home_runs': stats.home_runs,
-                            'rbis': stats.rbis,
-                            'runs_scored': stats.runs_scored,
-                            'batting_average': stats.batting_average,
-                            'on_base_percentage': stats.on_base_percentage,
-                            'slugging_percentage': stats.slugging_percentage,
-                            'ops': stats.ops
+                            "player_id": player_id,
+                            "player_name": player_name,
+                            "at_bats": stats.at_bats,
+                            "hits": stats.hits,
+                            "singles": stats.singles,
+                            "doubles": stats.doubles,
+                            "triples": stats.triples,
+                            "home_runs": stats.home_runs,
+                            "rbis": stats.rbis,
+                            "runs_scored": stats.runs_scored,
+                            "batting_average": stats.batting_average,
+                            "on_base_percentage": stats.on_base_percentage,
+                            "slugging_percentage": stats.slugging_percentage,
+                            "ops": stats.ops,
                         }
                         players_data.append(player_stats_dict)
 
                 team_stats = {
-                    metadata['team']: {
-                        'players': players_data,
-                        'games_played': 1  # Simplified
+                    metadata["team"]: {
+                        "players": players_data,
+                        "games_played": 1,  # Simplified
                     }
                 }
 
         stats_data = {
-            'league_name': metadata['league'],
-            'season': metadata['season'],
-            'team_stats': team_stats
+            "league_name": metadata["league"],
+            "season": metadata["season"],
+            "team_stats": team_stats,
         }
 
         export_to_excel(stats_data, output_path)
@@ -204,12 +221,14 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
             print(f"\n⚠️  Parsing Warnings ({len(warnings)}):")
             for warning in warnings:
                 location = ""
-                if warning['row_num'] and warning['col_num'] and warning['filename']:
+                if warning["row_num"] and warning["col_num"] and warning["filename"]:
                     location = f" (row {warning['row_num']}, column {warning['col_num']} in {warning['filename']})"
-                elif warning['filename']:
+                elif warning["filename"]:
                     location = f" (in {warning['filename']})"
-                
-                print(f"  - Player '{warning['player_name']}': {warning['assumption']}{location}")
+
+                print(
+                    f"  - Player '{warning['player_name']}': {warning['assumption']}{location}"
+                )
                 print(f"    Original: '{warning['original_attempt']}'")
 
     except (CSVParseError, ExcelExportError) as e:
@@ -217,5 +236,5 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -16,10 +16,10 @@ test:  ## Run all unit tests
 	pytest tests/ -v --cov=src --cov-report=html
 
 run:  ## Run console script (requires install first)
-	softball-stats --file fray-cyclones-winter-01.csv --output stats.xlsx
+	softball-stats --file fray-cyclones-winter-01.csv --output data/output/stats.xlsx
 
 run-module:  ## Run via python module (no install needed)
-	python -m softball_statistics.cli --file fray-cyclones-winter-01.csv --output stats.xlsx
+	python -m softball_statistics.cli --file fray-cyclones-winter-01.csv --output data/output/stats.xlsx
 
 clean:  ## Clean up generated files
 	rm -rf dist/ build/ *.egg-info/

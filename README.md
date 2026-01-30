@@ -38,7 +38,7 @@ pip install softball-statistics
 
 ```bash
 # Process a game file
-softball-stats --file data/input/fray-cyclones-winter-01.csv --output stats.xlsx
+softball-stats --file data/input/fray-cyclones-winter-01.csv --output data/output/stats.xlsx
 
 # List available leagues
 softball-stats --list-leagues
