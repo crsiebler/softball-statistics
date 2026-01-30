@@ -69,10 +69,11 @@ class Week:
 class Game:
     """Represents a game within a week."""
 
-    id: Optional[int]
-    week_id: Optional[int]
-    team_id: Optional[int]
-    date: date
+    id: Optional[int] = None
+    week_id: Optional[int] = None
+    team_id: Optional[int] = None
+    date: date = date.today()
+    game_number: int = 1
     opponent_team_id: Optional[int] = None
 
     def __post_init__(self):

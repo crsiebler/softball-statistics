@@ -104,11 +104,12 @@ def parse_csv_file(file_path: str) -> Dict[str, Any]:
                         attempts.append(
                             {
                                 "player_name": player_name,
-                                "attempt_raw": attempt_str,
-                                "hit_type": parsed_attempt["hit_type"],
+                                "outcome": attempt_str,
                                 "bases": parsed_attempt["bases"],
                                 "rbis": parsed_attempt["rbis"],
                                 "runs_scored": parsed_attempt["runs_scored"],
+                                "attempt_number": col_num
+                                - 1,  # Column index starting from 0
                                 "row_num": row_num,
                                 "col_num": col_num,
                             }
@@ -180,12 +181,21 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     # Create game
+    game_date = date.today()
+    if metadata.get("date"):
+        try:
+            game_date = date.fromisoformat(metadata["date"])
+        except ValueError:
+            # If date parsing fails, fall back to today
+            game_date = date.today()
+
     game = Game(
         id=None,
         week_id=None,  # Will be set after week is saved
         team_id=None,  # Will be set after team is saved
-        date=date.today(),  # Placeholder - could be extracted from filename or CSV
+        date=game_date,
         opponent_team_id=None,
+        game_number=int(metadata["game"]),
     )
 
     # Create players (we'll create them as we encounter them)
@@ -206,10 +216,11 @@ def create_database_objects(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         # Create at-bat attempt
         at_bat = {
             "player_name": player_name,
-            "outcome": attempt_data["attempt_raw"],
+            "outcome": attempt_data["outcome"],
             "bases": attempt_data["bases"],
             "rbis": attempt_data["rbis"],
             "runs_scored": attempt_data["runs_scored"],
+            "attempt_number": attempt_data["attempt_number"],
         }
         at_bat_attempts.append(at_bat)
 

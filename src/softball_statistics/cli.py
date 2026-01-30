@@ -210,11 +210,11 @@ def main():
         SQLiteQueryRepository,
     )
 
-    db_path = "softball_stats.db"
+    db_path = "stats.db"
     command_repo = SQLiteCommandRepository(db_path)
     query_repo = SQLiteQueryRepository(db_path)
     parser = CSVParser()
-    exporter = ExcelExporter()
+    exporter = ExcelExporter(query_repo)
 
     cli = CLI(command_repo, query_repo, parser, exporter)
     cli.run()

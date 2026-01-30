@@ -43,7 +43,7 @@ Bryce,F4,BB,1B+
             # Check first attempt
             attempt1 = result["attempts"][0]
             assert attempt1["player_name"] == "Anthony"
-            assert attempt1["hit_type"] == "single"
+            assert attempt1["outcome"] == "1B"
             assert attempt1["bases"] == 1
             assert attempt1["rbis"] == 0
             assert attempt1["runs_scored"] == 0
@@ -71,17 +71,15 @@ Player2,K+,F8*,BB
 
                 # Check complex attempts
                 hr_attempt = next(
-                    a for a in result["attempts"] if a["attempt_raw"] == "HR**"
+                    a for a in result["attempts"] if a["outcome"] == "HR**"
                 )
-                assert hr_attempt["hit_type"] == "home_run"
                 assert hr_attempt["bases"] == 4
                 assert hr_attempt["rbis"] == 2
                 assert hr_attempt["runs_scored"] == 0
 
                 triple_attempt = next(
-                    a for a in result["attempts"] if a["attempt_raw"] == "3B*+"
+                    a for a in result["attempts"] if a["outcome"] == "3B*+"
                 )
-                assert triple_attempt["hit_type"] == "triple"
                 assert triple_attempt["bases"] == 3
                 assert triple_attempt["rbis"] == 1
                 assert triple_attempt["runs_scored"] == 1
@@ -181,19 +179,19 @@ Player1,INVALID
             "attempts": [
                 {
                     "player_name": "Player1",
-                    "attempt_raw": "1B",
-                    "hit_type": "single",
+                    "outcome": "1B",
                     "bases": 1,
                     "rbis": 0,
                     "runs_scored": 0,
+                    "attempt_number": 1,
                 },
                 {
                     "player_name": "Player2",
-                    "attempt_raw": "2B*",
-                    "hit_type": "double",
+                    "outcome": "2B*",
                     "bases": 2,
                     "rbis": 1,
                     "runs_scored": 0,
+                    "attempt_number": 1,
                 },
             ],
         }
@@ -252,7 +250,7 @@ Player2,1B,HR**
 
                 # Check that HR** has no warning (explicit RBIs)
                 hr_double_star = next(
-                    a for a in result["attempts"] if a["attempt_raw"] == "HR**"
+                    a for a in result["attempts"] if a["outcome"] == "HR**"
                 )
                 assert hr_double_star["rbis"] == 2
 

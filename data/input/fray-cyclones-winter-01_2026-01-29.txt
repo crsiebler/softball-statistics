@@ -1,5 +1,5 @@
 Player,Attempt
-Anthony,AO
+Anthony,HPO
 Bryce,F4
 Kyla,1B+
 Alex,2B+
@@ -38,5 +38,5 @@ Cory,F9
 Kap,1B+
 Devon,3B**+
 Stephen,2B*
-Kunal,AO
+Kunal,HPO
 Ramos,K

@@ -15,6 +15,7 @@ class TestFilenameParser:
             "team": "cyclones",
             "season": "winter",
             "game": "01",
+            "date": None,
         }
         assert result == expected
 
@@ -26,6 +27,7 @@ class TestFilenameParser:
             "team": "team2",
             "season": "fall",
             "game": "03",
+            "date": None,
         }
         assert result == expected
 
@@ -37,6 +39,7 @@ class TestFilenameParser:
             "team": "super_team",
             "season": "spring",
             "game": "15",
+            "date": None,
         }
         assert result == expected
 
@@ -67,6 +70,7 @@ class TestFilenameParser:
             "team": "test_team",
             "season": "2024_season",
             "game": "01",
+            "date": None,
         }
         assert result == expected
 
@@ -83,5 +87,6 @@ class TestFilenameParser:
             "team": "Cyclones",
             "season": "WINTER",
             "game": "01",
+            "date": None,
         }
         assert result == expected

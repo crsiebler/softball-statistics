@@ -4,10 +4,11 @@ Excel exporter for softball statistics.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
+from softball_statistics.interfaces import QueryRepository
 from softball_statistics.models import PlayerStats
 
 logger = logging.getLogger(__name__)
@@ -22,12 +23,19 @@ class ExcelExportError(Exception):
 class ExcelExporter:
     """Excel exporter implementing Exporter interface."""
 
+    def __init__(self, query_repo: QueryRepository):
+        self.query_repo = query_repo
+
     def export(self, data: Dict[str, Any], output_path: str) -> None:
         """Export data to Excel."""
-        export_to_excel(data, output_path)
+        export_to_excel(data, output_path, self.query_repo)
 
 
-def export_to_excel(stats_data: Dict[str, Any], output_path: str) -> None:
+def export_to_excel(
+    stats_data: Dict[str, Any],
+    output_path: str,
+    query_repo: Optional[QueryRepository] = None,
+) -> None:
     """
     Export softball statistics to an Excel file with multiple sheets.
 
@@ -45,6 +53,10 @@ def export_to_excel(stats_data: Dict[str, Any], output_path: str) -> None:
         with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
             # Always create league summary sheet
             _create_league_summary_sheet(stats_data, writer)
+
+            # Create comprehensive player summary sheet (if query_repo available)
+            if query_repo:
+                _create_player_summary_sheet(query_repo, writer)
 
             # Team sheets
             for team_name, team_stats in stats_data.get("team_stats", {}).items():
@@ -141,6 +153,27 @@ def _create_team_sheet(
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
+        # Add team totals row
+        if player_data:
+            totals_row = {
+                "Player": "TEAM TOTALS",
+                "AB": sum(player["AB"] for player in player_data),
+                "H": sum(player["H"] for player in player_data),
+                "1B": sum(player["1B"] for player in player_data),
+                "2B": sum(player["2B"] for player in player_data),
+                "3B": sum(player["3B"] for player in player_data),
+                "HR": sum(player["HR"] for player in player_data),
+                "RBI": sum(player["RBI"] for player in player_data),
+                "R": sum(player["R"] for player in player_data),
+                "BA": f"{team_stats.get('team_batting_average', 0):.3f}",
+                "OBP": f"{team_stats.get('team_on_base_percentage', 0):.3f}",
+                "SLG": f"{team_stats.get('team_slugging_percentage', 0):.3f}",
+                "OPS": f"{team_stats.get('team_ops', 0):.3f}",
+            }
+            # Append totals row to DataFrame
+            totals_df = pd.DataFrame([totals_row])
+            df = pd.concat([df, totals_df], ignore_index=True)
+
         sheet_name = f"{team_name[:25]}"  # Excel sheet names limited to 31 chars
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -159,6 +192,70 @@ def _create_team_sheet(
         worksheet.column_dimensions["K"].width = 10  # OBP
         worksheet.column_dimensions["L"].width = 10  # SLG
         worksheet.column_dimensions["M"].width = 10  # OPS
+
+
+def _create_player_summary_sheet(
+    query_repo: QueryRepository, writer: pd.ExcelWriter
+) -> None:
+    """Create comprehensive player summary sheet with all players from all leagues/seasons."""
+    from softball_statistics.repository.sqlite import SQLiteQueryRepository
+
+    player_data = []
+
+    if isinstance(query_repo, SQLiteQueryRepository):
+        with query_repo._get_connection() as conn:
+            cursor = conn.cursor()
+            # Get all players with their team names
+            cursor.execute(
+                """
+                SELECT p.id, p.name, t.name as team_name
+                FROM players p
+                JOIN teams t ON p.team_id = t.id
+                ORDER BY p.name
+            """
+            )
+
+            players = cursor.fetchall()
+
+            for player_id, player_name, team_name in players:
+                stats = query_repo.get_player_stats(player_id)
+                if stats:
+                    player_data.append(
+                        {
+                            "Player": player_name,
+                            "Team": team_name,
+                            "AB": stats.at_bats,
+                            "H": stats.hits,
+                            "BA": f"{stats.batting_average:.3f}",
+                            "OBP": f"{stats.on_base_percentage:.3f}",
+                            "SLG": f"{stats.slugging_percentage:.3f}",
+                            "OPS": f"{stats.ops:.3f}",
+                            "HR": stats.home_runs,
+                            "RBI": stats.rbis,
+                            "R": stats.runs_scored,
+                        }
+                    )
+
+    if player_data:
+        df = pd.DataFrame(player_data)
+        # Sort alphabetically by player name (case-insensitive)
+        df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
+
+        df.to_excel(writer, sheet_name="Player Summary", index=False)
+
+        # Format the sheet
+        worksheet = writer.sheets["Player Summary"]
+        worksheet.column_dimensions["A"].width = 20  # Player name
+        worksheet.column_dimensions["B"].width = 20  # Team name
+        worksheet.column_dimensions["C"].width = 8  # AB
+        worksheet.column_dimensions["D"].width = 8  # H
+        worksheet.column_dimensions["E"].width = 10  # BA
+        worksheet.column_dimensions["F"].width = 10  # OBP
+        worksheet.column_dimensions["G"].width = 10  # SLG
+        worksheet.column_dimensions["H"].width = 10  # OPS
+        worksheet.column_dimensions["I"].width = 8  # HR
+        worksheet.column_dimensions["J"].width = 8  # RBI
+        worksheet.column_dimensions["K"].width = 8  # R
 
 
 def _create_player_sheet(player_stats: PlayerStats, writer: pd.ExcelWriter) -> None:

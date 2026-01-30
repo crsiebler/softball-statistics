@@ -86,12 +86,13 @@ class SQLiteCommandRepository(CommandRepository):
                     week_id INTEGER NOT NULL,
                     team_id INTEGER NOT NULL,
                     game_number INTEGER NOT NULL,
-                    opponent TEXT,
+                    opponent_team_id INTEGER,
                     FOREIGN KEY (week_id) REFERENCES weeks(id),
                     FOREIGN KEY (team_id) REFERENCES teams(id),
+                    FOREIGN KEY (opponent_team_id) REFERENCES teams(id),
                     UNIQUE(week_id, team_id, game_number)
                 )
-            """
+                """
             )
 
             conn.execute(
@@ -192,8 +193,8 @@ class SQLiteCommandRepository(CommandRepository):
             # Save game
             game = objects["game"]
             cursor.execute(
-                "INSERT OR IGNORE INTO games (week_id, team_id, game_number, opponent) VALUES (?, ?, ?, ?)",
-                (week_id, team_id, game.game_number, game.opponent),
+                "INSERT OR IGNORE INTO games (week_id, team_id, game_number, opponent_team_id) VALUES (?, ?, ?, ?)",
+                (week_id, team_id, game.game_number, game.opponent_team_id),
             )
             game_id = (
                 cursor.lastrowid
@@ -208,7 +209,7 @@ class SQLiteCommandRepository(CommandRepository):
                 # Get player_id
                 cursor.execute(
                     "SELECT id FROM players WHERE team_id = ? AND name = ?",
-                    (team_id, attempt.player_name),
+                    (team_id, attempt["player_name"]),
                 )
                 player_row = cursor.fetchone()
                 if player_row:
@@ -222,11 +223,11 @@ class SQLiteCommandRepository(CommandRepository):
                         (
                             game_id,
                             player_id,
-                            attempt.attempt_number,
-                            attempt.outcome,
-                            attempt.bases,
-                            attempt.rbis,
-                            attempt.runs_scored,
+                            attempt["attempt_number"],
+                            attempt["outcome"],
+                            attempt["bases"],
+                            attempt["rbis"],
+                            attempt["runs_scored"],
                         ),
                     )
 
@@ -332,53 +333,85 @@ class SQLiteQueryRepository(QueryRepository):
         """Get player statistics."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
+
+            # Get all attempts for this player
             cursor.execute(
-                """
-                SELECT
-                    COUNT(*) as at_bats,
-                    SUM(CASE WHEN outcome IN ('1B', '2B', '3B', 'HR') THEN 1 ELSE 0 END) as hits,
-                    SUM(CASE WHEN outcome = '1B' THEN 1 ELSE 0 END) as singles,
-                    SUM(CASE WHEN outcome = '2B' THEN 1 ELSE 0 END) as doubles,
-                    SUM(CASE WHEN outcome = '3B' THEN 1 ELSE 0 END) as triples,
-                    SUM(CASE WHEN outcome = 'HR' THEN 1 ELSE 0 END) as home_runs,
-                    SUM(rbis) as rbis,
-                    SUM(runs_scored) as runs_scored
-                FROM at_bat_attempts
-                WHERE player_id = ?
-                """,
+                "SELECT outcome, bases, rbis, runs_scored FROM at_bat_attempts WHERE player_id = ?",
                 (player_id,),
             )
-            row = cursor.fetchone()
-            if row and row[0] > 0:  # at_bats > 0
-                stats = calculate_batting_stats(
-                    [
-                        {
-                            "outcome": attempt[0],
-                            "rbis": attempt[1],
-                            "runs_scored": attempt[2],
-                        }
-                        for attempt in cursor.execute(
-                            "SELECT outcome, rbis, runs_scored FROM at_bat_attempts WHERE player_id = ?",
-                            (player_id,),
-                        ).fetchall()
-                    ]
-                )
-                return PlayerStats(
-                    player_id=player_id,
-                    at_bats=row[0],
-                    hits=row[1],
-                    singles=row[2],
-                    doubles=row[3],
-                    triples=row[4],
-                    home_runs=row[5],
-                    rbis=row[6],
-                    runs_scored=row[7],
-                    batting_average=stats["batting_average"],
-                    on_base_percentage=stats["on_base_percentage"],
-                    slugging_percentage=stats["slugging_percentage"],
-                    ops=stats["ops"],
-                )
-            return None
+
+            attempts = cursor.fetchall()
+            if not attempts:
+                return None
+
+            # Aggregate stats
+            total_attempts = len(attempts)
+            hits = 0
+            singles = 0
+            doubles = 0
+            triples = 0
+            home_runs = 0
+            walks = 0
+            strikeouts = 0
+            rbis = 0
+            runs_scored = 0
+            sacrifices = 0
+
+            for outcome, bases, attempt_rbis, attempt_runs in attempts:
+                outcome_lower = outcome.lower()
+                rbis += attempt_rbis
+                runs_scored += attempt_runs
+
+                if outcome_lower == "bb":
+                    walks += 1
+                elif outcome_lower == "k":
+                    strikeouts += 1
+                elif bases > 0:
+                    hits += 1
+                    if bases == 1:
+                        singles += 1
+                    elif bases == 2:
+                        doubles += 1
+                    elif bases == 3:
+                        triples += 1
+                    elif bases == 4:
+                        home_runs += 1
+                elif attempt_rbis > 0:
+                    # Sacrifice: out with RBIs
+                    sacrifices += 1
+
+            # At-bats = total attempts - walks - sacrifices
+            at_bats = total_attempts - walks - sacrifices
+
+            # Calculate advanced stats
+            stats_dict = calculate_batting_stats(
+                at_bats=at_bats,
+                hits=hits,
+                singles=singles,
+                doubles=doubles,
+                triples=triples,
+                home_runs=home_runs,
+                walks=walks,
+                strikeouts=strikeouts,
+                rbis=rbis,
+                runs_scored=runs_scored,
+            )
+
+            return PlayerStats(
+                player_id=player_id,
+                at_bats=at_bats,
+                hits=hits,
+                singles=singles,
+                doubles=doubles,
+                triples=triples,
+                home_runs=home_runs,
+                rbis=rbis,
+                runs_scored=runs_scored,
+                batting_average=stats_dict["batting_average"],
+                on_base_percentage=stats_dict["on_base_percentage"],
+                slugging_percentage=stats_dict["slugging_percentage"],
+                ops=stats_dict["ops"],
+            )
 
 
 class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
