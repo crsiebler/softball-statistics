@@ -5,8 +5,6 @@ from typing import Dict
 class AttemptParseError(Exception):
     """Raised when an attempt string cannot be parsed."""
 
-    pass
-
 
 def parse_attempt(
     attempt: str,

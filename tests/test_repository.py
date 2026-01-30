@@ -1,8 +1,6 @@
-import sqlite3
-
 import pytest
 
-from softball_statistics.models import League, Player, Team
+from softball_statistics.models import League
 from softball_statistics.repository.sqlite import SQLiteRepository
 
 
@@ -45,7 +43,7 @@ class TestSQLiteRepository:
                 "INSERT INTO leagues (name, season) VALUES (?, ?)",
                 (league.name, league.season),
             )
-            saved_id = cursor.lastrowid
+            cursor.lastrowid
 
         # Test getting - but get_league doesn't exist, list_leagues does
         leagues = repo.list_leagues()
@@ -75,7 +73,7 @@ class TestSQLiteRepository:
                 "INSERT INTO teams (league_id, name) VALUES (?, ?)",
                 (league_id, "Cyclones"),
             )
-            team_id = cursor.lastrowid
+            cursor.lastrowid
 
         # Test listing teams
         teams = repo.list_teams_by_league(league_id)

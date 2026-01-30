@@ -4,8 +4,6 @@ from typing import Dict, Optional
 class FilenameParseError(Exception):
     """Raised when a filename cannot be parsed."""
 
-    pass
-
 
 def parse_filename(filename: str) -> Dict[str, Optional[str]]:
     """

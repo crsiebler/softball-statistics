@@ -12,4 +12,3 @@ class Parser(ABC):
     @abstractmethod
     def parse(self, file_path: str) -> Dict[str, Any]:
         """Parse data from file path and return structured result."""
-        pass

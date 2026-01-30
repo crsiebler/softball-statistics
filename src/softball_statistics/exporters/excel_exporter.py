@@ -4,7 +4,7 @@ Excel exporter for softball statistics.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 class ExcelExportError(Exception):
     """Raised when Excel export fails."""
-
-    pass
 
 
 class ExcelExporter:
@@ -78,8 +76,8 @@ def _create_league_summary_sheet(
     stats_data: Dict[str, Any], writer: pd.ExcelWriter
 ) -> None:
     """Create the league summary sheet."""
-    league_name = stats_data.get("league_name", "Unknown League")
-    season = stats_data.get("season", "Unknown Season")
+    stats_data.get("league_name", "Unknown League")
+    stats_data.get("season", "Unknown Season")
 
     summary_data = []
     for team_name, team_stats in stats_data.get("team_stats", {}).items():

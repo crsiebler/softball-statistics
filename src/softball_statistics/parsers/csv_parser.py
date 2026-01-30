@@ -5,9 +5,9 @@ CSV parser for softball game data.
 import csv
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from softball_statistics.models import AtBatAttempt, Game, League, Player, Team, Week
+from softball_statistics.models import Game, Week
 from softball_statistics.models.factories import (
     LeagueFactory,
     PlayerFactory,
@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 class CSVParseError(Exception):
     """Raised when CSV parsing fails."""
-
-    pass
 
 
 class CSVParser(Parser):
