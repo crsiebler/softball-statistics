@@ -90,6 +90,18 @@ Examples:
             help="Wipe database and reparse all CSV files in data/input/",
         )
 
+        parser.add_argument(
+            "--replace-existing",
+            action="store_true",
+            help="Replace existing games without prompting",
+        )
+
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Skip confirmation prompts",
+        )
+
         args_parsed = parser.parse_args(args)
 
         try:
@@ -101,9 +113,11 @@ Examples:
                     sys.exit(1)
                 self._list_teams(args_parsed.league)
             elif args_parsed.reparse_all:
-                self._reparse_all()
+                self._reparse_all(args_parsed)
             elif args_parsed.file:
-                self._process_file(args_parsed.file, args_parsed.output)
+                self._process_file(
+                    args_parsed.file, args_parsed.output, args_parsed.replace_existing
+                )
             else:
                 parser.print_help()
                 sys.exit(1)
@@ -139,15 +153,16 @@ Examples:
         for team in teams:
             print(f"  - {team.name}")
 
-    def _reparse_all(self) -> None:
+    def _reparse_all(self, args) -> None:
         """Wipe database and reparse all CSV files in data/input/."""
         from pathlib import Path
 
         print("⚠️  This will wipe the database and reparse all files in data/input/")
-        response = input("Continue? (y/N): ")
-        if response.lower() not in ["y", "yes"]:
-            print("Operation cancelled.")
-            return
+        if not args.force:
+            response = input("Continue? (y/N): ")
+            if response.lower() not in ["y", "yes"]:
+                print("Operation cancelled.")
+                return
 
         print("Wiping database...")
         # Clear all data
@@ -178,6 +193,8 @@ Examples:
 
         print(f"Found {len(csv_files)} CSV files to process...")
 
+        from softball_statistics.parsers.filename_parser import parse_filename
+
         success_count = 0
         error_count = 0
 
@@ -195,14 +212,29 @@ Examples:
         print(f"\nReparsing complete: {success_count} successful, {error_count} errors")
         if success_count > 0:
             print("Database has been rebuilt with formatted team/league names.")
+            # Export stats if output path provided
+            if hasattr(args, "output") and args.output:
+                # Get metadata from the last processed file
+                last_file = csv_files[-1]
+                metadata = parse_filename(last_file.name)
+                assert metadata["league"] is not None
+                assert metadata["team"] is not None
+                assert metadata["season"] is not None
+                stats_data = self.calculate_stats_use_case.execute(
+                    metadata["league"], metadata["team"], metadata["season"]
+                )
+                self.exporter.export(stats_data, args.output)
+                print(f"Success! Statistics exported to {args.output}")
 
-    def _process_file(self, file_path: str, output_path: str) -> None:
+    def _process_file(
+        self, file_path: str, output_path: str, replace_existing: bool
+    ) -> None:
         """Process a CSV file."""
         try:
             # Process the file using use case
             print(f"Parsing {file_path}...")
             parsed_data = self.process_game_use_case.execute(
-                file_path, replace_existing=False
+                file_path, replace_existing=replace_existing
             )
 
             # Calculate stats
@@ -242,30 +274,37 @@ Examples:
         except ValueError as e:
             # Game exists, ask to replace
             if "already exists" in str(e):
-                # Parse filename to get metadata for prompt
-                from softball_statistics.parsers.filename_parser import parse_filename
+                if not replace_existing:
+                    # Parse filename to get metadata for prompt
+                    from softball_statistics.parsers.filename_parser import (
+                        parse_filename,
+                    )
 
-                metadata = parse_filename(Path(file_path).name)
-                assert metadata["league"] is not None
-                assert metadata["team"] is not None
-                assert metadata["season"] is not None
-                response = input(
-                    f"Game {metadata['league']}-{metadata['team']}-{metadata['season']}-{metadata['game']} already exists. Replace? (y/N): "
-                )
-                if response.lower() in ["y", "yes"]:
-                    print("Replacing existing game data...")
-                    parsed_data = self.process_game_use_case.execute(
-                        file_path, replace_existing=True
+                    metadata = parse_filename(Path(file_path).name)
+                    assert metadata["league"] is not None
+                    assert metadata["team"] is not None
+                    assert metadata["season"] is not None
+                    response = input(
+                        f"Game {metadata['league']}-{metadata['team']}-{metadata['season']}-{metadata['game']} already exists. Replace? (y/N): "
                     )
-                    # Continue with stats and export
-                    stats_data = self.calculate_stats_use_case.execute(
-                        metadata["league"], metadata["team"], metadata["season"]
-                    )
-                    print(f"Exporting to {output_path}...")
-                    self.exporter.export(stats_data, output_path)
-                    print(f"Success! Statistics exported to {output_path}")
+                    if response.lower() in ["y", "yes"]:
+                        print("Replacing existing game data...")
+                        parsed_data = self.process_game_use_case.execute(
+                            file_path, replace_existing=True
+                        )
+                        # Continue with stats and export
+                        stats_data = self.calculate_stats_use_case.execute(
+                            metadata["league"], metadata["team"], metadata["season"]
+                        )
+                        print(f"Exporting to {output_path}...")
+                        self.exporter.export(stats_data, output_path)
+                        print(f"Success! Statistics exported to {output_path}")
+                    else:
+                        print("Operation cancelled.")
                 else:
-                    print("Operation cancelled.")
+                    # Should not reach here if replace_existing=True
+                    print(f"Processing failed: {e}")
+                    sys.exit(1)
             else:
                 print(f"Processing failed: {e}")
                 sys.exit(1)

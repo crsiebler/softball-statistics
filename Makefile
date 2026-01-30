@@ -1,9 +1,11 @@
 # Makefile for softball-statistics
 
-.PHONY: help setup install test run run-module clean format check-format lint pre-commit-install
+.PHONY: help setup install test run run-all clean format check-format lint pre-commit-install
 
 CONDA_BASE := $(shell conda info --base 2>/dev/null || echo /opt/anaconda3)
 CONDA_PROFILE := $(CONDA_BASE)/etc/profile.d/conda.sh
+
+FILE ?= data/input/fray-cyclones-winter-01_2026-01-29.csv
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -18,10 +20,10 @@ test:  ## Run all unit tests
 	source $(CONDA_PROFILE) && conda activate softball-stats && pytest tests/ -v --cov=src --cov-report=html
 
 run:  ## Run console script (requires install first)
-	softball-stats --file data/input/fray-cyclones-winter-01_2026-01-29.csv --output data/output/stats.xlsx
+	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --file $(FILE) --output data/output/stats.xlsx --replace-existing
 
-run-module:  ## Run via python module (no install needed)
-	python -m softball_statistics.cli --file data/input/fray-cyclones-winter-01_2026-01-29.csv --output data/output/stats.xlsx
+run-all:  ## Run console script to parse all CSV files and export
+	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --reparse-all --force --output data/output/stats.xlsx
 
 clean:  ## Clean up generated files
 	rm -rf dist/ build/ *.egg-info/
