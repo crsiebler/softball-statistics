@@ -11,9 +11,9 @@ class TestFilenameParser:
         """Test parsing a valid filename."""
         result = parse_filename("fray-cyclones-winter-01.csv")
         expected = {
-            "league": "fray",
-            "team": "cyclones",
-            "season": "winter",
+            "league": "Fray",
+            "team": "Cyclones",
+            "season": "Winter 2026",
             "game": "01",
             "date": None,
         }
@@ -23,9 +23,9 @@ class TestFilenameParser:
         """Test parsing filename with numbers in league/team names."""
         result = parse_filename("league1-team2-fall-03.csv")
         expected = {
-            "league": "league1",
-            "team": "team2",
-            "season": "fall",
+            "league": "League1",
+            "team": "Team2",
+            "season": "Fall 2026",
             "game": "03",
             "date": None,
         }
@@ -35,9 +35,9 @@ class TestFilenameParser:
         """Test parsing filename with underscores in names."""
         result = parse_filename("big_league-super_team-spring-15.csv")
         expected = {
-            "league": "big_league",
-            "team": "super_team",
-            "season": "spring",
+            "league": "Big League",
+            "team": "Super Team",
+            "season": "Spring 2026",
             "game": "15",
             "date": None,
         }
@@ -66,9 +66,9 @@ class TestFilenameParser:
         """Test parsing filename with special characters."""
         result = parse_filename("test_league-test_team-2024_season-01.csv")
         expected = {
-            "league": "test_league",
-            "team": "test_team",
-            "season": "2024_season",
+            "league": "Test League",
+            "team": "Test Team",
+            "season": "2024 Season 2026",
             "game": "01",
             "date": None,
         }
@@ -78,14 +78,29 @@ class TestFilenameParser:
         """Test that game numbers keep leading zeros."""
         result = parse_filename("league-team-season-001.csv")
         assert result["game"] == "001"
+        assert result["league"] == "League"
+        assert result["team"] == "Team"
+        assert result["season"] == "Season 2026"
+
+    def test_filename_with_date(self):
+        """Test parsing filename with date (season should use date year)."""
+        result = parse_filename("fray-cyclones-winter-01_2025-03-15.csv")
+        expected = {
+            "league": "Fray",
+            "team": "Cyclones",
+            "season": "Winter 2025",
+            "game": "01",
+            "date": "2025-03-15",
+        }
+        assert result == expected
 
     def test_case_sensitivity(self):
-        """Test that parsing is case-sensitive (preserves original case)."""
+        """Test that parsing applies title case transformation regardless of input case."""
         result = parse_filename("FRAY-Cyclones-WINTER-01.csv")
         expected = {
-            "league": "FRAY",
+            "league": "Fray",
             "team": "Cyclones",
-            "season": "WINTER",
+            "season": "Winter 2026",
             "game": "01",
             "date": None,
         }

@@ -53,7 +53,8 @@ class CLI:
 Examples:
   softball-stats --file fray-cyclones-winter-01.csv --output data/output/stats.xlsx
   softball-stats --list-leagues
-  softball-stats --list-teams --league "fray"
+  softball-stats --list-teams --league "Fray"
+  softball-stats --reparse-all
             """,
         )
 
@@ -82,6 +83,12 @@ Examples:
 
         parser.add_argument("--league", type=str, help="League name for --list-teams")
 
+        parser.add_argument(
+            "--reparse-all",
+            action="store_true",
+            help="Wipe database and reparse all CSV files in data/input/",
+        )
+
         args_parsed = parser.parse_args(args)
 
         try:
@@ -92,6 +99,8 @@ Examples:
                     print("Error: --league is required with --list-teams")
                     sys.exit(1)
                 self._list_teams(args_parsed.league)
+            elif args_parsed.reparse_all:
+                self._reparse_all()
             elif args_parsed.file:
                 self._process_file(args_parsed.file, args_parsed.output)
             else:
@@ -128,6 +137,61 @@ Examples:
         print(f"Teams in {league_name}:")
         for team in teams:
             print(f"  - {team.name}")
+
+    def _reparse_all(self) -> None:
+        """Wipe database and reparse all CSV files in data/input/."""
+        from pathlib import Path
+
+        print("⚠️  This will wipe the database and reparse all files in data/input/")
+        response = input("Continue? (y/N): ")
+        if response.lower() not in ["y", "yes"]:
+            print("Operation cancelled.")
+            return
+
+        print("Wiping database...")
+        # Clear all data
+        with self.command_repo._get_connection() as conn:
+            cursor = conn.cursor()
+            # Delete in reverse dependency order
+            cursor.execute("DELETE FROM parsing_warnings")
+            cursor.execute("DELETE FROM at_bats")
+            cursor.execute("DELETE FROM games")
+            cursor.execute("DELETE FROM players")
+            cursor.execute("DELETE FROM weeks")
+            cursor.execute("DELETE FROM teams")
+            cursor.execute("DELETE FROM leagues")
+            conn.commit()
+
+        # Find all CSV files in data/input/
+        input_dir = Path("data/input")
+        if not input_dir.exists():
+            print(f"Error: {input_dir} directory not found")
+            return
+
+        csv_files = list(input_dir.glob("*.csv"))
+        if not csv_files:
+            print(f"No CSV files found in {input_dir}")
+            return
+
+        print(f"Found {len(csv_files)} CSV files to process...")
+
+        success_count = 0
+        error_count = 0
+
+        for csv_file in csv_files:
+            try:
+                print(f"Processing {csv_file.name}...")
+                self.process_game_use_case.execute(
+                    str(csv_file), replace_existing=False
+                )
+                success_count += 1
+            except Exception as e:
+                print(f"Error processing {csv_file.name}: {e}")
+                error_count += 1
+
+        print(f"\nReparsing complete: {success_count} successful, {error_count} errors")
+        if success_count > 0:
+            print("Database has been rebuilt with formatted team/league names.")
 
     def _process_file(self, file_path: str, output_path: str) -> None:
         """Process a CSV file."""

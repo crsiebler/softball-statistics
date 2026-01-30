@@ -29,9 +29,9 @@ Bryce,F4,BB,1B+
 
             result = parse_csv_file(file_path)
 
-            assert result["metadata"]["league"] == "test"
-            assert result["metadata"]["team"] == "team"
-            assert result["metadata"]["season"] == "season"
+            assert result["metadata"]["league"] == "Test"
+            assert result["metadata"]["team"] == "Team"
+            assert result["metadata"]["season"] == "Season 2026"
             assert result["metadata"]["game"] == "01"
 
             assert len(result["player_names"]) == 2

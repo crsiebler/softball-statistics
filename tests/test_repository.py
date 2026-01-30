@@ -115,12 +115,13 @@ class TestSQLiteRepository:
         with repo._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO leagues (name, season) VALUES (?, ?)", ("fray", "winter")
+                "INSERT INTO leagues (name, season) VALUES (?, ?)",
+                ("Fray", "Winter 2026"),
             )
             league_id = cursor.lastrowid
             cursor.execute(
                 "INSERT INTO teams (league_id, name) VALUES (?, ?)",
-                (league_id, "cyclones"),
+                (league_id, "Cyclones"),
             )
             team_id = cursor.lastrowid
             cursor.execute(
@@ -133,12 +134,12 @@ class TestSQLiteRepository:
                 (week_id, team_id, 1),
             )
 
-        exists = repo.game_exists("fray", "cyclones", "winter", "01")
+        exists = repo.game_exists("Fray", "Cyclones", "Winter 2026", "01")
         assert exists is True
 
     def test_game_exists_false(self, repo):
         """Test checking if a game exists (returns False)."""
-        exists = repo.game_exists("fray", "cyclones", "winter", "01")
+        exists = repo.game_exists("Fray", "Cyclones", "Winter 2026", "01")
         assert exists is False
 
     def test_list_leagues(self, repo):

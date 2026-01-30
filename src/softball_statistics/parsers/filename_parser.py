@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, Optional
 
 
@@ -73,6 +74,20 @@ def parse_filename(filename: str) -> Dict[str, Optional[str]]:
     # Validate game number format (should be numeric, can have leading zeros)
     if not game.isdigit():
         raise FilenameParseError(f"Game number must be numeric, found '{game}'")
+
+    # Transform names to Pascal Case
+    league = league.replace("_", " ").title()
+    team = team.replace("_", " ").title()
+
+    # Transform season and append year
+    season = season.replace("_", " ").title()
+    if date:
+        year = date.split("-")[0]  # Extract year from YYYY-MM-DD
+        season = f"{season} {year}"
+    else:
+        # Use current year for seasons without date
+        current_year = datetime.now().year
+        season = f"{season} {current_year}"
 
     return {
         "league": league,
