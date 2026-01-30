@@ -13,6 +13,10 @@ from softball_statistics.interfaces import CommandRepository, Parser, QueryRepos
 from softball_statistics.models import League, Team
 
 
+class ValidationError(Exception):
+    """Raised when game data validation fails."""
+
+
 class ProcessGameUseCase:
     """Use case for processing a game file."""
 
@@ -33,6 +37,16 @@ class ProcessGameUseCase:
         """
         # Parse the file
         parsed_data = self.parser.parse(file_path)
+
+        # Validate RBI total equals run total
+        total_rbis = sum(pa["rbis"] for pa in parsed_data["plate_appearances"])
+        total_runs = sum(pa["runs_scored"] for pa in parsed_data["plate_appearances"])
+
+        if total_rbis != total_runs:
+            raise ValidationError(
+                f"RBI total ({total_rbis}) does not equal run total ({total_runs}). "
+                f"File rejected."
+            )
 
         # Create database objects
         # Note: This assumes create_database_objects is moved to domain or injected

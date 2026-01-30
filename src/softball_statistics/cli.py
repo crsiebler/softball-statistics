@@ -20,6 +20,7 @@ from softball_statistics.use_cases import (
     ListLeaguesUseCase,
     ListTeamsUseCase,
     ProcessGameUseCase,
+    ValidationError,
 )
 
 
@@ -235,6 +236,9 @@ Examples:
                     )
                     print(f"    Original: '{warning['original_attempt']}'")
 
+        except ValidationError as e:
+            print(f"Validation Error: {e}")
+            sys.exit(1)
         except ValueError as e:
             # Game exists, ask to replace
             if "already exists" in str(e):
