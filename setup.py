@@ -11,7 +11,7 @@ setup(
     description="A comprehensive softball statistics tracker for multiple leagues and teams",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/your-org/softball-statistics",
+    url="https://github.com/crsiebler/softball-statistics",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[

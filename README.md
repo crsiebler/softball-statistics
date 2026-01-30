@@ -8,7 +8,7 @@ A comprehensive Python application to process softball game results and calculat
 - Calculate comprehensive batting statistics (BA, OBP, SLG, OPS, etc.)
 - Multi-league and multi-team support
 - Excel export with formatted reports
-- SQLite database for data persistence
+- SQLite database for data persistence (stats.db)
 - Duplicate upload prevention with user confirmation
 
 ## Installation
@@ -17,7 +17,7 @@ A comprehensive Python application to process softball game results and calculat
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/crsiebler/softball-statistics.git
 cd softball-statistics
 
 # Create conda environment
@@ -38,7 +38,7 @@ pip install softball-statistics
 
 ```bash
 # Process a game file
-softball-stats --file fray-cyclones-winter-01.csv --output stats.xlsx
+softball-stats --file data/input/fray-cyclones-winter-01.csv --output stats.xlsx
 
 # List available leagues
 softball-stats --list-leagues
@@ -77,9 +77,14 @@ softball-statistics/
 │   ├── calculators/           # Statistics calculations
 │   └── exporters/             # Export functionality
 ├── tests/                     # Test suite
-├── data/                      # Sample data files
+├── data/                      # Actual gameplay data
+│   └── input/                 # Input data directory
+│       ├── fray-cyclones-winter-01.csv
+│       └── fray-cyclones-winter-01.txt
 ├── environment.yml            # Conda environment
 ├── setup.py                   # Package configuration
+├── stats.db                   # SQLite database file
+├── .gitignore                 # Git ignore rules
 └── Makefile                   # Automation scripts
 ```
 

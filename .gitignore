@@ -3,8 +3,10 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Test cache
+# Test cache and coverage
 .pytest_cache/
+.coverage
+htmlcov/
 
 # IDE files
 .vscode/
