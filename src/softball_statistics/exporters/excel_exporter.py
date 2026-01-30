@@ -96,21 +96,21 @@ def _create_team_sheet(team_name: str, team_stats: Dict[str, Any], writer: pd.Ex
     """Create a sheet for team statistics."""
     player_data = []
 
-    for player_stats in team_stats.get('players', []):
+    for player_info in team_stats.get('players', []):
         player_data.append({
-            'Player': f"Player {player_stats.player_id}",  # Placeholder - need player name
-            'AB': player_stats.at_bats,
-            'H': player_stats.hits,
-            '1B': player_stats.singles,
-            '2B': player_stats.doubles,
-            '3B': player_stats.triples,
-            'HR': player_stats.home_runs,
-            'RBI': player_stats.rbis,
-            'R': player_stats.runs_scored,
-            'BA': f"{player_stats.batting_average:.3f}",
-            'OBP': f"{player_stats.on_base_percentage:.3f}",
-            'SLG': f"{player_stats.slugging_percentage:.3f}",
-            'OPS': f"{player_stats.ops:.3f}"
+            'Player': player_info.get('player_name', f"Player {player_info.get('player_id', 'Unknown')}"),
+            'AB': player_info.get('at_bats', 0),
+            'H': player_info.get('hits', 0),
+            '1B': player_info.get('singles', 0),
+            '2B': player_info.get('doubles', 0),
+            '3B': player_info.get('triples', 0),
+            'HR': player_info.get('home_runs', 0),
+            'RBI': player_info.get('rbis', 0),
+            'R': player_info.get('runs_scored', 0),
+            'BA': f"{player_info.get('batting_average', 0):.3f}",
+            'OBP': f"{player_info.get('on_base_percentage', 0):.3f}",
+            'SLG': f"{player_info.get('slugging_percentage', 0):.3f}",
+            'OPS': f"{player_info.get('ops', 0):.3f}"
         })
 
     if player_data:

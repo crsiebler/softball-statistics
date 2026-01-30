@@ -328,9 +328,98 @@ class SQLiteRepository(Repository):
 
     def get_player_stats(self, player_id: int, week_id: Optional[int] = None) -> Optional[PlayerStats]:
         """Get calculated stats for a player, optionally for a specific week."""
-        # This is a simplified implementation - in practice you'd aggregate from at_bats table
-        # For now, return None
-        return None
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Build query based on whether week_id is specified
+            if week_id is not None:
+                # Get attempts for this player in games from the specified week
+                cursor.execute('''
+                    SELECT ab.outcome, ab.bases, ab.rbis, ab.runs_scored
+                    FROM at_bats ab
+                    JOIN games g ON ab.game_id = g.id
+                    WHERE ab.player_id = ? AND g.week_id = ?
+                ''', (player_id, week_id))
+            else:
+                # Get all attempts for this player
+                cursor.execute('''
+                    SELECT outcome, bases, rbis, runs_scored
+                    FROM at_bats
+                    WHERE player_id = ?
+                ''', (player_id,))
+
+            attempts = cursor.fetchall()
+            if not attempts:
+                return None
+
+            # Aggregate stats
+            total_attempts = len(attempts)
+            hits = 0
+            singles = 0
+            doubles = 0
+            triples = 0
+            home_runs = 0
+            walks = 0
+            strikeouts = 0
+            rbis = 0
+            runs_scored = 0
+            sacrifices = 0
+
+            for outcome, bases, attempt_rbis, attempt_runs in attempts:
+                outcome_lower = outcome.lower()
+                rbis += attempt_rbis
+                runs_scored += attempt_runs
+
+                if outcome_lower == 'bb':
+                    walks += 1
+                elif outcome_lower == 'k':
+                    strikeouts += 1
+                elif bases > 0:
+                    hits += 1
+                    if bases == 1:
+                        singles += 1
+                    elif bases == 2:
+                        doubles += 1
+                    elif bases == 3:
+                        triples += 1
+                    elif bases == 4:
+                        home_runs += 1
+                elif attempt_rbis > 0:
+                    # Sacrifice: out with RBIs
+                    sacrifices += 1
+
+            # At-bats = total attempts - walks - sacrifices
+            at_bats = total_attempts - walks - sacrifices
+
+            # Calculate advanced stats
+            stats_dict = calculate_batting_stats(
+                at_bats=at_bats,
+                hits=hits,
+                singles=singles,
+                doubles=doubles,
+                triples=triples,
+                home_runs=home_runs,
+                walks=walks,
+                strikeouts=strikeouts,
+                rbis=rbis,
+                runs_scored=runs_scored
+            )
+
+            return PlayerStats(
+                player_id=player_id,
+                at_bats=at_bats,
+                hits=hits,
+                singles=singles,
+                doubles=doubles,
+                triples=triples,
+                home_runs=home_runs,
+                rbis=rbis,
+                runs_scored=runs_scored,
+                batting_average=stats_dict['batting_average'],
+                on_base_percentage=stats_dict['on_base_percentage'],
+                slugging_percentage=stats_dict['slugging_percentage'],
+                ops=stats_dict['ops']
+            )
 
     def save_game_data(self, objects: Dict[str, Any]) -> None:
         """Save all game data objects in the correct order."""

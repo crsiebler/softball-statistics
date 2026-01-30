@@ -146,10 +146,54 @@ def _process_file(repo: SQLiteRepository, file_path: str, output_path: str):
         print(f"Exporting to {output_path}...")
 
         # Get all stats for export
+        # Find the team and get player stats
+        leagues = repo.list_leagues()
+        league = next((l for l in leagues if l.name == metadata['league'] and l.season == metadata['season']), None)
+        team_stats = {}
+        if league and league.id:
+            teams = repo.list_teams_by_league(league.id)
+            team = next((t for t in teams if t.name == metadata['team']), None)
+            if team and team.id:
+                # Get all players for this team and their stats
+                players_data = []
+                with repo._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT id, name FROM players WHERE team_id = ?', (team.id,))
+                    players = cursor.fetchall()
+
+                for player_id, player_name in players:
+                    stats = repo.get_player_stats(player_id)
+                    if stats:
+                        # Create a modified PlayerStats with name
+                        player_stats_dict = {
+                            'player_id': player_id,
+                            'player_name': player_name,
+                            'at_bats': stats.at_bats,
+                            'hits': stats.hits,
+                            'singles': stats.singles,
+                            'doubles': stats.doubles,
+                            'triples': stats.triples,
+                            'home_runs': stats.home_runs,
+                            'rbis': stats.rbis,
+                            'runs_scored': stats.runs_scored,
+                            'batting_average': stats.batting_average,
+                            'on_base_percentage': stats.on_base_percentage,
+                            'slugging_percentage': stats.slugging_percentage,
+                            'ops': stats.ops
+                        }
+                        players_data.append(player_stats_dict)
+
+                team_stats = {
+                    metadata['team']: {
+                        'players': players_data,
+                        'games_played': 1  # Simplified
+                    }
+                }
+
         stats_data = {
             'league_name': metadata['league'],
             'season': metadata['season'],
-            'team_stats': {}  # TODO: Implement stats aggregation
+            'team_stats': team_stats
         }
 
         export_to_excel(stats_data, output_path)
