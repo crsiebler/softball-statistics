@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import pytest
+from openpyxl import load_workbook
 
 from softball_statistics.exporters.excel_exporter import (
     ExcelExportError,
@@ -101,3 +102,44 @@ class TestExcelExporter:
 
         with pytest.raises(ExcelExportError, match="Failed to export to Excel"):
             export_to_excel(stats_data, "/invalid/path/that/does/not/exist/file.xlsx")
+
+    def test_league_column_in_summary_sheet(self):
+        """Test that league name is included as first column in League Summary sheet."""
+        stats_data = {
+            "league_name": "phx_fray",
+            "season": "Winter 2024",
+            "team_stats": {
+                "Test Team": {
+                    "games_played": 1,
+                    "players": [],
+                    "team_batting_average": 0.000,
+                    "team_on_base_percentage": 0.000,
+                    "team_slugging_percentage": 0.000,
+                    "team_ops": 0.000,
+                }
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = f.name
+
+        try:
+            export_to_excel(stats_data, output_path)
+
+            # Load the workbook and check the League Summary sheet
+            wb = load_workbook(output_path)
+            sheet = wb["League Summary"]
+
+            # Check headers (first row)
+            headers = [cell.value for cell in sheet[1]]
+            assert headers[0] == "League"
+            assert headers[1] == "Team"
+
+            # Check data (second row)
+            data = [cell.value for cell in sheet[2]]
+            assert data[0] == "Phx Fray"  # Title case applied
+            assert data[1] == "Test Team"
+
+        finally:
+            if os.path.exists(output_path):
+                os.unlink(output_path)

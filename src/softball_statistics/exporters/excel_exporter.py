@@ -80,7 +80,7 @@ def _create_league_summary_sheet(
     stats_data: Dict[str, Any], writer: pd.ExcelWriter
 ) -> None:
     """Create the league summary sheet."""
-    stats_data.get("league_name", "Unknown League")
+    league_name = stats_data.get("league_name", "Unknown League").replace("_", " ").title()
     stats_data.get("season", "Unknown Season")
 
     summary_data = []
@@ -93,6 +93,7 @@ def _create_league_summary_sheet(
 
         summary_data.append(
             {
+                "League": league_name,
                 "Team": team_name,
                 "Games Played": team_stats.get("games_played", 0),
                 "Total Players": len(players),
@@ -107,6 +108,7 @@ def _create_league_summary_sheet(
     if not summary_data:
         summary_data = [
             {
+                "League": "Unknown League",
                 "Team": "No teams found",
                 "Games Played": 0,
                 "Total Players": 0,
@@ -122,13 +124,14 @@ def _create_league_summary_sheet(
 
     # Format the sheet
     worksheet = writer.sheets["League Summary"]
-    worksheet.column_dimensions["A"].width = 20  # Team
-    worksheet.column_dimensions["B"].width = 15  # Games Played
-    worksheet.column_dimensions["C"].width = 16  # Total Players
-    worksheet.column_dimensions["D"].width = 12  # Team BA
-    worksheet.column_dimensions["E"].width = 12  # Team OBP
-    worksheet.column_dimensions["F"].width = 12  # Team SLG
-    worksheet.column_dimensions["G"].width = 12  # Team OPS
+    worksheet.column_dimensions["A"].width = 20  # League
+    worksheet.column_dimensions["B"].width = 20  # Team
+    worksheet.column_dimensions["C"].width = 15  # Games Played
+    worksheet.column_dimensions["D"].width = 16  # Total Players
+    worksheet.column_dimensions["E"].width = 12  # Team BA
+    worksheet.column_dimensions["F"].width = 12  # Team OBP
+    worksheet.column_dimensions["G"].width = 12  # Team SLG
+    worksheet.column_dimensions["H"].width = 12  # Team OPS
 
 
 def _create_team_sheet(
