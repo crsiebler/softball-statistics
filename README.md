@@ -55,6 +55,22 @@ softball-stats --list-teams --league "fray"
 make test
 ```
 
+### Code Quality
+
+```bash
+# Format code
+make format
+
+# Check formatting
+make check-format
+
+# Run all linting and checks (includes formatting)
+make lint
+
+# Install pre-commit hooks (runs automatically on commits)
+make pre-commit-install
+```
+
 ### Running the Application
 
 ```bash

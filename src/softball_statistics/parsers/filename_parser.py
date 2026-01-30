@@ -4,6 +4,7 @@ from typing import Dict
 
 class FilenameParseError(Exception):
     """Raised when a filename cannot be parsed."""
+
     pass
 
 
@@ -24,13 +25,13 @@ def parse_filename(filename: str) -> Dict[str, str]:
         raise FilenameParseError("Filename cannot be empty")
 
     # Remove .csv extension if present
-    if filename.endswith('.csv'):
+    if filename.endswith(".csv"):
         filename = filename[:-4]
     else:
         raise FilenameParseError("Filename must have .csv extension")
 
     # Split by hyphens
-    parts = filename.split('-')
+    parts = filename.split("-")
 
     if len(parts) != 4:
         raise FilenameParseError(
@@ -42,15 +43,12 @@ def parse_filename(filename: str) -> Dict[str, str]:
 
     # Validate that all parts are non-empty
     if not all([league, team, season, game]):
-        raise FilenameParseError("All filename parts (league, team, season, game) must be non-empty")
+        raise FilenameParseError(
+            "All filename parts (league, team, season, game) must be non-empty"
+        )
 
     # Validate game number format (should be numeric, can have leading zeros)
     if not game.isdigit():
         raise FilenameParseError(f"Game number must be numeric, found '{game}'")
 
-    return {
-        'league': league,
-        'team': team,
-        'season': season,
-        'game': game
-    }
+    return {"league": league, "team": team, "season": season, "game": game}

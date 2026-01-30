@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import Optional
 from datetime import date
+from typing import Optional
 
 
 @dataclass
 class League:
     """Represents a softball league."""
+
     id: Optional[int]
     name: str
     season: str
@@ -18,6 +19,7 @@ class League:
 @dataclass
 class Team:
     """Represents a team within a league."""
+
     id: Optional[int]
     league_id: Optional[int]
     name: str
@@ -32,6 +34,7 @@ class Team:
 @dataclass
 class Player:
     """Represents a player on a team."""
+
     id: Optional[int]
     team_id: Optional[int]
     name: str
@@ -46,6 +49,7 @@ class Player:
 @dataclass
 class Week:
     """Represents a week within a league season."""
+
     id: Optional[int]
     league_id: Optional[int]
     week_number: int
@@ -64,6 +68,7 @@ class Week:
 @dataclass
 class Game:
     """Represents a game within a week."""
+
     id: Optional[int]
     week_id: Optional[int]
     team_id: Optional[int]
@@ -80,6 +85,7 @@ class Game:
 @dataclass
 class AtBatAttempt:
     """Represents a single at-bat attempt."""
+
     id: Optional[int]
     player_id: Optional[int]
     game_id: Optional[int]
@@ -104,6 +110,7 @@ class AtBatAttempt:
 @dataclass
 class PlayerStats:
     """Calculated statistics for a player."""
+
     player_id: int
     at_bats: int = 0
     hits: int = 0
@@ -121,6 +128,15 @@ class PlayerStats:
     def __post_init__(self):
         if self.player_id < 1:
             raise ValueError("Valid player_id is required")
-        for field in ['at_bats', 'hits', 'singles', 'doubles', 'triples', 'home_runs', 'rbis', 'runs_scored']:
+        for field in [
+            "at_bats",
+            "hits",
+            "singles",
+            "doubles",
+            "triples",
+            "home_runs",
+            "rbis",
+            "runs_scored",
+        ]:
             if getattr(self, field) < 0:
                 raise ValueError(f"{field} cannot be negative")

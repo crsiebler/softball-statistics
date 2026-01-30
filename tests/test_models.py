@@ -1,6 +1,16 @@
-import pytest
 from datetime import date
-from softball_statistics.models import League, Team, Player, Week, Game, AtBatAttempt, PlayerStats
+
+import pytest
+
+from softball_statistics.models import (
+    AtBatAttempt,
+    Game,
+    League,
+    Player,
+    PlayerStats,
+    Team,
+    Week,
+)
 
 
 class TestLeague:
@@ -79,7 +89,9 @@ class TestWeek:
     def test_week_start_after_end(self):
         start = date(2024, 1, 7)
         end = date(2024, 1, 1)
-        with pytest.raises(ValueError, match="Start date must be before or equal to end date"):
+        with pytest.raises(
+            ValueError, match="Start date must be before or equal to end date"
+        ):
             Week(id=1, league_id=1, week_number=1, start_date=start, end_date=end)
 
 
@@ -107,8 +119,7 @@ class TestGame:
 class TestAtBatAttempt:
     def test_valid_attempt(self):
         attempt = AtBatAttempt(
-            id=1, player_id=1, game_id=1, outcome="2B*",
-            bases=2, rbis=1, runs_scored=0
+            id=1, player_id=1, game_id=1, outcome="2B*", bases=2, rbis=1, runs_scored=0
         )
         assert attempt.id == 1
         assert attempt.player_id == 1
@@ -146,7 +157,7 @@ class TestPlayerStats:
             batting_average=0.300,
             on_base_percentage=0.400,
             slugging_percentage=0.350,
-            ops=0.750
+            ops=0.750,
         )
         assert stats.player_id == 1
         assert stats.at_bats == 10

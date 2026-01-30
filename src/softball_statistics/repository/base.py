@@ -3,8 +3,17 @@ Abstract repository interface for data persistence.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
-from softball_statistics.models import League, Team, Player, Week, Game, AtBatAttempt, PlayerStats
+from typing import Any, Dict, List, Optional
+
+from softball_statistics.models import (
+    AtBatAttempt,
+    Game,
+    League,
+    Player,
+    PlayerStats,
+    Team,
+    Week,
+)
 
 
 class Repository(ABC):
@@ -86,7 +95,9 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def get_player_stats(self, player_id: int, week_id: Optional[int] = None) -> Optional[PlayerStats]:
+    def get_player_stats(
+        self, player_id: int, week_id: Optional[int] = None
+    ) -> Optional[PlayerStats]:
         """Get calculated stats for a player, optionally for a specific week."""
         pass
 

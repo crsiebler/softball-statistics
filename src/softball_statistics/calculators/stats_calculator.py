@@ -43,7 +43,9 @@ def calculate_obp(hits: int, walks: int, hbp: int, at_bats: int, sf: int) -> flo
     return round(numerator / denominator, 3)
 
 
-def calculate_slg(singles: int, doubles: int, triples: int, home_runs: int, at_bats: int) -> float:
+def calculate_slg(
+    singles: int, doubles: int, triples: int, home_runs: int, at_bats: int
+) -> float:
     """
     Calculate slugging percentage: Total Bases / AB
 
@@ -92,7 +94,7 @@ def calculate_batting_stats(
     rbis: int,
     runs_scored: int,
     hbp: int = 0,
-    sf: int = 0
+    sf: int = 0,
 ) -> Dict[str, float]:
     """
     Calculate all batting statistics for a player.
@@ -120,18 +122,18 @@ def calculate_batting_stats(
     ops = calculate_ops(obp, slg)
 
     return {
-        'at_bats': at_bats,
-        'hits': hits,
-        'singles': singles,
-        'doubles': doubles,
-        'triples': triples,
-        'home_runs': home_runs,
-        'walks': walks,
-        'strikeouts': strikeouts,
-        'rbis': rbis,
-        'runs_scored': runs_scored,
-        'batting_average': ba,
-        'on_base_percentage': obp,
-        'slugging_percentage': slg,
-        'ops': ops
+        "at_bats": at_bats,
+        "hits": hits,
+        "singles": singles,
+        "doubles": doubles,
+        "triples": triples,
+        "home_runs": home_runs,
+        "walks": walks,
+        "strikeouts": strikeouts,
+        "rbis": rbis,
+        "runs_scored": runs_scored,
+        "batting_average": ba,
+        "on_base_percentage": obp,
+        "slugging_percentage": slg,
+        "ops": ops,
     }

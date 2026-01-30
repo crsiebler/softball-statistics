@@ -2,19 +2,20 @@
 Command-line interface for softball statistics.
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
-from softball_statistics.repository.sqlite import SQLiteRepository
-from softball_statistics.parsers.csv_parser import (
-    parse_csv_file,
-    create_database_objects,
-    CSVParseError,
-)
+
 from softball_statistics.exporters.excel_exporter import (
-    export_to_excel,
     ExcelExportError,
+    export_to_excel,
 )
+from softball_statistics.parsers.csv_parser import (
+    CSVParseError,
+    create_database_objects,
+    parse_csv_file,
+)
+from softball_statistics.repository.sqlite import SQLiteRepository
 
 
 def main():
