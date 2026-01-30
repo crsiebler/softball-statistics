@@ -2,18 +2,20 @@
 
 .PHONY: help setup install test run run-module clean format check-format lint pre-commit-install
 
+CONDA_BASE := $(shell conda info --base 2>/dev/null || echo /opt/anaconda3)
+CONDA_PROFILE := $(CONDA_BASE)/etc/profile.d/conda.sh
+
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup:  ## Create and setup conda environment
-	conda env create -f environment.yml
-	@echo "Run: conda activate softball-stats"
+setup:  ## Create conda environment (idempotent)
+	conda env list | grep -q softball-stats || conda env create -f environment.yml
 
 install:  ## Install package in development mode (creates console script)
-	pip install -e .
+	source $(CONDA_PROFILE) && conda activate softball-stats && pip install -e .
 
 test:  ## Run all unit tests
-	pytest tests/ -v --cov=src --cov-report=html
+	source $(CONDA_PROFILE) && conda activate softball-stats && pytest tests/ -v --cov=src --cov-report=html
 
 run:  ## Run console script (requires install first)
 	softball-stats --file data/input/fray-cyclones-winter-01_2026-01-29.csv --output data/output/stats.xlsx
@@ -27,15 +29,15 @@ clean:  ## Clean up generated files
 	find . -type d -name __pycache__ -exec rm -rf {} +
 
 format:  ## Format Python code with Black and isort
-	conda activate softball-stats && black src/ tests/ setup.py
-	conda activate softball-stats && isort src/ tests/ setup.py
+	source $(CONDA_PROFILE) && conda activate softball-stats && black src/ tests/ setup.py
+	source $(CONDA_PROFILE) && conda activate softball-stats && isort src/ tests/ setup.py
 
 check-format:  ## Check if Python code is properly formatted
-	conda activate softball-stats && black --check src/ tests/ setup.py
-	conda activate softball-stats && isort --check-only src/ tests/ setup.py
+	source $(CONDA_PROFILE) && conda activate softball-stats && black --check src/ tests/ setup.py
+	source $(CONDA_PROFILE) && conda activate softball-stats && isort --check-only src/ tests/ setup.py
 
 lint:  ## Run all pre-commit checks (includes format and basic checks)
-	conda activate softball-stats && pre-commit run --all-files
+	source $(CONDA_PROFILE) && conda activate softball-stats && pre-commit run --all-files
 
 pre-commit-install:  ## Install pre-commit hooks
-	conda activate softball-stats && pre-commit install
+	source $(CONDA_PROFILE) && conda activate softball-stats && pre-commit install
