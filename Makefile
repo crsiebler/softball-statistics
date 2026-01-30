@@ -27,15 +27,15 @@ clean:  ## Clean up generated files
 	find . -type d -name __pycache__ -exec rm -rf {} +
 
 format:  ## Format Python code with Black and isort
-	source activate softball-stats && black src/ tests/ setup.py
-	source activate softball-stats && isort src/ tests/ setup.py
+	conda activate softball-stats && black src/ tests/ setup.py
+	conda activate softball-stats && isort src/ tests/ setup.py
 
 check-format:  ## Check if Python code is properly formatted
-	source activate softball-stats && black --check src/ tests/ setup.py
-	source activate softball-stats && isort --check-only src/ tests/ setup.py
+	conda activate softball-stats && black --check src/ tests/ setup.py
+	conda activate softball-stats && isort --check-only src/ tests/ setup.py
 
 lint:  ## Run all pre-commit checks (includes format and basic checks)
-	source activate softball-stats && pre-commit run --all-files
+	conda activate softball-stats && pre-commit run --all-files
 
 pre-commit-install:  ## Install pre-commit hooks
-	source activate softball-stats && pre-commit install
+	conda activate softball-stats && pre-commit install
