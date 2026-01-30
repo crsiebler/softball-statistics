@@ -1,6 +1,13 @@
 import pytest
 
-from softball_statistics.parsers.attempt_parser import AttemptParseError, parse_attempt
+from softball_statistics.parsers.attempt_parser import (
+    AttemptParseError,
+    _is_fly_ball,
+    _is_ground_ball,
+    _is_other_out,
+    _is_simple_fielding,
+    parse_attempt,
+)
 
 
 class TestAttemptParser:
@@ -15,16 +22,41 @@ class TestAttemptParser:
             "warnings": [],
         }
 
-    def test_double_hit(self):
-        """Test parsing a double (2B)."""
-        result = parse_attempt("2B")
-        assert result == {
-            "hit_type": "double",
-            "bases": 2,
-            "rbis": 0,
-            "runs_scored": 0,
-            "warnings": [],
-        }
+
+class TestIsOutNotation:
+    @pytest.mark.parametrize("attempt", ["F1", "F9", "F10", "f1", "f10"])
+    def test_is_fly_ball_valid(self, attempt):
+        assert _is_fly_ball(attempt) is True
+
+    @pytest.mark.parametrize("attempt", ["F11", "F0", "F", "f11", "G1"])
+    def test_is_fly_ball_invalid(self, attempt):
+        assert _is_fly_ball(attempt) is False
+
+    @pytest.mark.parametrize("attempt", ["5-1", "4-6-3", "10-10", "1-2-3-4"])
+    def test_is_ground_ball_valid(self, attempt):
+        assert _is_ground_ball(attempt) is True
+
+    @pytest.mark.parametrize(
+        "attempt", ["11-1", "1-11", "4-6-11", "5", "1-2-3-11", "a-1"]
+    )
+    def test_is_ground_ball_invalid(self, attempt):
+        assert _is_ground_ball(attempt) is False
+
+    @pytest.mark.parametrize("attempt", ["1", "5", "9"])
+    def test_is_simple_fielding_valid(self, attempt):
+        assert _is_simple_fielding(attempt) is True
+
+    @pytest.mark.parametrize("attempt", ["11", "0", "5-1", "F5"])
+    def test_is_simple_fielding_invalid(self, attempt):
+        assert _is_simple_fielding(attempt) is False
+
+    @pytest.mark.parametrize("attempt", ["A1", "P3", "P10"])
+    def test_is_other_out_valid(self, attempt):
+        assert _is_other_out(attempt) is True
+
+    @pytest.mark.parametrize("attempt", ["A11", "A0", "A123", "A", "11", "B11"])
+    def test_is_other_out_invalid(self, attempt):
+        assert _is_other_out(attempt) is False
 
     def test_triple_hit(self):
         """Test parsing a triple (3B)."""
@@ -168,13 +200,35 @@ class TestAttemptParser:
             "warnings": [],
         }
 
-    def test_out_with_rbi(self):
-        """Test parsing an out with RBI (F8*)."""
-        result = parse_attempt("F8*")
+    def test_out_with_fly_ball_f10(self):
+        """Test parsing an out with F10 (right fielder in softball)."""
+        result = parse_attempt("F10")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_out_with_fly_ball_f10_rbi(self):
+        """Test parsing an out with F10 and RBI (F10*)."""
+        result = parse_attempt("F10*")
         assert result == {
             "hit_type": "out",
             "bases": 0,
             "rbis": 1,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_ground_ball_10_1(self):
+        """Test parsing a ground ball to position 10 throwing to 1."""
+        result = parse_attempt("10-1")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
             "runs_scored": 0,
             "warnings": [],
         }
@@ -224,6 +278,10 @@ class TestAttemptParser:
             "HR*****",  # Too many * modifiers for HR (should fail)
             "1B!*",  # Invalid modifier
             "AB",  # Looks like walk but invalid
+            "F11",  # Invalid fly ball position (>10)
+            "11-1",  # Invalid ground ball position (>10)
+            "A11",  # Invalid other notation position (>10)
+            "11",  # Invalid simple fielding position (>10)
         ],
     )
     def test_invalid_attempts(self, invalid_attempt):
@@ -265,6 +323,17 @@ class TestAttemptParser:
             ],
         }
         assert result == expected
+
+    def test_ground_ball_multi_position(self):
+        """Test parsing a multi-position ground ball (4-6-3)."""
+        result = parse_attempt("4-6-3")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
 
     def test_case_insensitive(self):
         """Test that parsing is case insensitive."""

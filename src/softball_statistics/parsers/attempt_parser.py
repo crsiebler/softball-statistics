@@ -133,31 +133,51 @@ def parse_attempt(
     }
 
 
+def _is_fly_ball(attempt: str) -> bool:
+    """Check if attempt is a fly ball (F1-F10)."""
+    attempt = attempt.lower()
+    return re.match(r"^f(10|[1-9])$", attempt) is not None
+
+
+def _is_ground_ball(attempt: str) -> bool:
+    """Check if attempt is a ground ball (e.g., 5-1, 4-6-3)."""
+    attempt = attempt.lower()
+    match = re.match(r"^(\d+(?:-\d+)+)$", attempt)
+    if match:
+        positions = [int(p) for p in attempt.split("-")]
+        return all(1 <= p <= 10 for p in positions)
+    return False
+
+
+def _is_simple_fielding(attempt: str) -> bool:
+    """Check if attempt is simple fielding position (1-10)."""
+    attempt = attempt.lower()
+    match = re.match(r"^\d$", attempt)
+    if match:
+        return 1 <= int(attempt) <= 10
+    return False
+
+
+def _is_other_out(attempt: str) -> bool:
+    """Check if attempt is other out notation (letter + 1-10)."""
+    attempt = attempt.lower()
+    match = re.match(r"^[a-z](\d+)$", attempt)
+    return match is not None and len(attempt) <= 3 and 1 <= int(match.group(1)) <= 10
+
+
 def _is_out_notation(attempt: str) -> bool:
     """
     Check if an attempt string represents an out.
 
     Valid out notations include:
-    - Fly balls: F followed by number (F4, F8, etc.)
-    - Ground balls: number-number (5-1, 6-4, etc.)
-    - Other common out notations: A1, P3, etc.
-    - Simple fielding positions: single digit (4, 8, etc.) - assumed to be fly balls
+    - Fly balls: F followed by number 1-10 (F4, F8, F10, etc.)
+    - Ground balls: number-number (5-1, 6-4, 10-1, 4-6-3, etc.) - positions 1-10
+    - Other common out notations: A1, P3, etc. - positions 1-10
+    - Simple fielding positions: single digit 1-10 (4, 8, etc.) - assumed to be fly balls
     """
-    # Fly ball: F followed by 1-9 (case insensitive)
-    if re.match(r"^f[1-9]$", attempt):
-        return True
-
-    # Ground ball: number-number (like 5-1, 6-4, 4-3)
-    if re.match(r"^\d-\d$", attempt):
-        return True
-
-    # Simple fielding position: just a number (4, 8, etc.) - assume fly ball
-    if re.match(r"^\d$", attempt):
-        return True
-
-    # Other out notations: single character + number, or other common patterns
-    # This is more permissive to handle various league notations
-    if re.match(r"^[a-z]\d+$", attempt) and len(attempt) <= 3:
-        return True
-
-    return False
+    return (
+        _is_fly_ball(attempt)
+        or _is_ground_ball(attempt)
+        or _is_simple_fielding(attempt)
+        or _is_other_out(attempt)
+    )

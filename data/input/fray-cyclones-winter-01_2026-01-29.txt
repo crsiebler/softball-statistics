@@ -7,7 +7,7 @@ Rafael,1B**
 Devon,1B
 Cory,F7
 --
-Kap,6-1
+Kap,6-3
 Ramos,K
 Stephen,F5
 --
@@ -25,7 +25,7 @@ Kap,F9
 Kyla,1B+
 Stephen,2B*
 Kunal,1B*
-Devon,5-1
+Devon,5-3
 --
 Anthony,2B+
 Bryce,2B*+
