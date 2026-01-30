@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from openpyxl.styles import Border, Side
 
 from softball_statistics.interfaces import QueryRepository
 from softball_statistics.models import PlayerStats
@@ -165,30 +166,6 @@ def _create_team_sheet(
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        # Add team totals row
-        if player_data:
-            totals_row = {
-                "Player": "TEAM TOTALS",
-                "PA": sum(player["PA"] for player in player_data),
-                "AB": sum(player["AB"] for player in player_data),
-                "H": sum(player["H"] for player in player_data),
-                "1B": sum(player["1B"] for player in player_data),
-                "2B": sum(player["2B"] for player in player_data),
-                "3B": sum(player["3B"] for player in player_data),
-                "HR": sum(player["HR"] for player in player_data),
-                "BB": sum(player["BB"] for player in player_data),
-                "SF": sum(player["SF"] for player in player_data),
-                "RBI": sum(player["RBI"] for player in player_data),
-                "R": sum(player["R"] for player in player_data),
-                "BA": f"{team_stats.get('team_batting_average', 0):.3f}",
-                "OBP": f"{team_stats.get('team_on_base_percentage', 0):.3f}",
-                "SLG": f"{team_stats.get('team_slugging_percentage', 0):.3f}",
-                "OPS": f"{team_stats.get('team_ops', 0):.3f}",
-            }
-            # Append totals row to DataFrame
-            totals_df = pd.DataFrame([totals_row])
-            df = pd.concat([df, totals_df], ignore_index=True)
-
         sheet_name = f"{team_name[:25]}"  # Excel sheet names limited to 31 chars
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -210,6 +187,42 @@ def _create_team_sheet(
         worksheet.column_dimensions["N"].width = 10  # OBP
         worksheet.column_dimensions["O"].width = 10  # SLG
         worksheet.column_dimensions["P"].width = 10  # OPS
+
+        # Add team totals row below the table with styling
+        if player_data:
+            totals_row = {
+                "Player": "TEAM TOTALS",
+                "PA": sum(player["PA"] for player in player_data),
+                "AB": sum(player["AB"] for player in player_data),
+                "H": sum(player["H"] for player in player_data),
+                "1B": sum(player["1B"] for player in player_data),
+                "2B": sum(player["2B"] for player in player_data),
+                "3B": sum(player["3B"] for player in player_data),
+                "HR": sum(player["HR"] for player in player_data),
+                "BB": sum(player["BB"] for player in player_data),
+                "SF": sum(player["SF"] for player in player_data),
+                "RBI": sum(player["RBI"] for player in player_data),
+                "R": sum(player["R"] for player in player_data),
+                "BA": f"{team_stats.get('team_batting_average', 0):.3f}",
+                "OBP": f"{team_stats.get('team_on_base_percentage', 0):.3f}",
+                "SLG": f"{team_stats.get('team_slugging_percentage', 0):.3f}",
+                "OPS": f"{team_stats.get('team_ops', 0):.3f}",
+            }
+            # Add empty separator row
+            worksheet.append([])
+            # Add totals row
+            worksheet.append(list(totals_row.values()))
+            # Apply borders to totals row to match table styling
+            thin_border = Border(
+                left=Side(style='thin'), 
+                right=Side(style='thin'), 
+                top=Side(style='thin'), 
+                bottom=Side(style='thin')
+            )
+            totals_row_num = worksheet.max_row
+            for col in range(1, 17):  # Columns A to P
+                cell = worksheet.cell(row=totals_row_num, column=col)
+                cell.border = thin_border
 
 
 def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
