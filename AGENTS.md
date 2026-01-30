@@ -28,6 +28,7 @@
 ## Technical Constraints - Boundaries
 - **Never Touch**: `data/` folder (only Python app writes to `data/output`)
 - **Preferred Tools**: conda, pytest
+- **Environment Activation**: Always activate conda environment with `conda activate softball-stats` before testing or running the application
 - **Mandatory Pre-commit**: `make lint && make test`
 
 ## Testing Standards
