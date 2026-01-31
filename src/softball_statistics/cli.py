@@ -99,9 +99,10 @@ Examples:
         )
 
         parser.add_argument(
-            "--force",
-            action="store_true",
-            help="Skip confirmation prompts",
+            "--db",
+            type=str,
+            default="stats.db",
+            help="SQLite database file path (default: stats.db)",
         )
 
         args_parsed = parser.parse_args(args)
@@ -335,17 +336,22 @@ Examples:
 
 def main():
     """Main CLI entry point."""
+    # Parse args first to get db path
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--db", type=str, default="stats.db")
+    db_args, remaining_args = parser.parse_known_args()
+
     # TODO: Use DI container or factory to inject dependencies
     # For now, hardcoded for transition
     from softball_statistics.repository.sqlite import SQLiteRepository
 
-    db_path = "stats.db"
+    db_path = db_args.db
     repo = SQLiteRepository(db_path)  # type: ignore
     parser = CSVParser()
     exporter = ExcelExporter(repo)
 
     cli = CLI(repo, repo, parser, exporter)
-    cli.run()
+    cli.run(remaining_args)
 
 
 if __name__ == "__main__":

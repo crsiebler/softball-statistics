@@ -98,6 +98,43 @@ OUTCOMES = [
 ]
 
 
+# Weights for realistic softball outcomes (approximate % of plate appearances)
+# - 1B: 36% (most common hit)
+# - 2B: 10% (moderate doubles)
+# - 3B: 0.5% (rare triples)
+# - HR: 4% (power hit, less common than doubles)
+# - K: 5% (low strikeouts in softball)
+# - BB: 6% (moderate walks)
+# - HPO: 1% (rare hit by pitch)
+# - F1-F10: 1.6% each (~16% fly outs total to various fielders)
+# - 1-3,4-3,5-3,6-3,6-4,6-5: 3.1% each (~19% groundouts total)
+WEIGHTS = [
+    36,
+    10,
+    0.5,
+    4,
+    5,
+    6,
+    1,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    1.6,
+    3.1,
+    3.1,
+    3.1,
+    3.1,
+    3.1,
+    3.1,
+]
+
+
 def get_advance_bases(outcome):
     """Return number of bases to advance on this outcome."""
     if outcome in ["1B", "2B", "3B", "HR"]:
@@ -108,7 +145,12 @@ def get_advance_bases(outcome):
         return 0  # no advance on these outs
     else:
         # other outs: random 0-3, biased toward 0
-        weights = [0.85, 0.13, 0.015, 0.005]  # heavily bias toward 0, almost none to 2/3
+        weights = [
+            0.85,
+            0.13,
+            0.015,
+            0.005,
+        ]  # heavily bias toward 0, almost none to 2/3
         return random.choices([0, 1, 2, 3], weights=weights)[0]
 
 
@@ -176,8 +218,7 @@ class InningSimulator:
         batter_idx = self.lineup[self.lineup_idx % len(self.lineup)]
         self.lineup_idx += 1
 
-        possible_outcomes = [o for o in OUTCOMES]
-        outcome = random.choice(possible_outcomes)
+        outcome = random.choices(OUTCOMES, weights=WEIGHTS)[0]
         advance_bases = get_advance_bases(outcome)
 
         runs_scored, rbis, scoring_runners = self.advance_runners(

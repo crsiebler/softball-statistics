@@ -1,6 +1,6 @@
 # Makefile for softball-statistics
 
-.PHONY: help setup install test run run-all clean format check-format lint pre-commit-install
+.PHONY: help setup install test run run-all clean format check-format lint pre-commit-install generate-test-data process-test-data generate-and-process-test-data
 
 CONDA_BASE := $(shell conda info --base 2>/dev/null || echo /opt/anaconda3)
 CONDA_PROFILE := $(CONDA_BASE)/etc/profile.d/conda.sh
@@ -20,10 +20,10 @@ test:  ## Run all unit tests
 	source $(CONDA_PROFILE) && conda activate softball-stats && pytest tests/ -v --cov=src --cov-report=html
 
 run:  ## Run console script (requires install first)
-	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --file $(FILE) --output data/output/stats.xlsx --replace-existing
+	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --file $(FILE) --output data/output/stats.xlsx --replace-existing --db data/output/stats.db
 
 run-all:  ## Run console script to parse all CSV files and export
-	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --reparse-all --force --output data/output/stats.xlsx
+	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --reparse-all --force --output data/output/stats.xlsx --db data/output/stats.db
 
 clean:  ## Clean up generated files
 	rm -rf dist/ build/ *.egg-info/
@@ -43,3 +43,11 @@ lint:  ## Run all pre-commit checks (includes format and basic checks)
 
 pre-commit-install:  ## Install pre-commit hooks
 	source $(CONDA_PROFILE) && conda activate softball-stats && pre-commit install
+
+generate-test-data:  ## Generate fake test data CSV files in data/test/input/
+	source $(CONDA_PROFILE) && conda activate softball-stats && python scripts/generate_test_data.py
+
+process-test-data:  ## Export test data to Excel file in data/test/ (requires generate-test-data first)
+	source $(CONDA_PROFILE) && conda activate softball-stats && python scripts/process_test_data.py
+
+generate-and-process-test-data: generate-test-data process-test-data  ## Generate and export fake test data in one step
