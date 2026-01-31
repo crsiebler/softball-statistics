@@ -85,6 +85,9 @@ make run-module
 
 ```
 softball-statistics/
+├── scripts/                   # Utility scripts
+│   ├── generate_test_data.py  # Generate fake test data
+│   └── process_test_data.py   # Process test data and export
 ├── src/softball_statistics/
 │   ├── cli.py                 # Command-line interface
 │   ├── models/                # Data models

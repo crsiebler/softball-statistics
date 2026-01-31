@@ -29,6 +29,102 @@ class SQLiteCommandRepository(CommandRepository):
 
     def _create_tables(self):
         """Create all database tables."""
+        with sqlite3.connect(self.db_path) as conn:
+            # Drop existing tables to recreate fresh
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS parsing_warnings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_name TEXT NOT NULL,
+                    row_num INTEGER NOT NULL,
+                    col_num INTEGER NOT NULL,
+                    filename TEXT NOT NULL,
+                    original_attempt TEXT NOT NULL,
+                    assumption TEXT NOT NULL
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS leagues (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    season TEXT NOT NULL,
+                    UNIQUE(name, season)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS teams (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    league_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    FOREIGN KEY (league_id) REFERENCES leagues(id),
+                    UNIQUE(league_id, name)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS players (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    team_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    FOREIGN KEY (team_id) REFERENCES teams(id),
+                    UNIQUE(team_id, name)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weeks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    league_id INTEGER NOT NULL,
+                    week_number INTEGER NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    FOREIGN KEY (league_id) REFERENCES leagues(id),
+                    UNIQUE(league_id, week_number)
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS games (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    week_id INTEGER NOT NULL,
+                    team_id INTEGER NOT NULL,
+                    game_number INTEGER NOT NULL,
+                    date TEXT NOT NULL,
+                    opponent_team_id INTEGER,
+                    FOREIGN KEY (week_id) REFERENCES weeks(id),
+                    FOREIGN KEY (team_id) REFERENCES teams(id),
+                    UNIQUE(week_id, team_id, game_number)
+                )
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS plate_appearances (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_id INTEGER NOT NULL,
+                    game_id INTEGER NOT NULL,
+                    outcome TEXT NOT NULL,
+                    bases INTEGER DEFAULT 0,
+                    rbis INTEGER DEFAULT 0,
+                    runs_scored INTEGER DEFAULT 0,
+                    FOREIGN KEY (player_id) REFERENCES players(id),
+                    FOREIGN KEY (game_id) REFERENCES games(id)
+                )
+            """
+            )
 
     def _get_connection(self):
         """Get database connection."""
@@ -216,7 +312,7 @@ class SQLiteQueryRepository(QueryRepository):
                 rbis += attempt_rbis
                 runs_scored += attempt_runs
 
-                if outcome_lower == "bb":
+                if outcome_lower.startswith("bb"):
                     walks += 1
                 elif outcome_lower == "k":
                     strikeouts += 1
@@ -275,109 +371,6 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
     def __init__(self, db_path: str):
         SQLiteCommandRepository.__init__(self, db_path)
         SQLiteQueryRepository.__init__(self, db_path)
-
-    def _create_tables(self):
-        """Create all database tables."""
-        with sqlite3.connect(self.db_path) as conn:
-            # Drop existing tables to recreate fresh
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS parsing_warnings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_name TEXT NOT NULL,
-                    row_num INTEGER NOT NULL,
-                    col_num INTEGER NOT NULL,
-                    filename TEXT NOT NULL,
-                    original_attempt TEXT NOT NULL,
-                    assumption TEXT NOT NULL
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS leagues (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    season TEXT NOT NULL,
-                    UNIQUE(name, season)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS teams (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    league_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    FOREIGN KEY (league_id) REFERENCES leagues(id),
-                    UNIQUE(league_id, name)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS players (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    team_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    FOREIGN KEY (team_id) REFERENCES teams(id),
-                    UNIQUE(team_id, name)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS weeks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    league_id INTEGER NOT NULL,
-                    week_number INTEGER NOT NULL,
-                    start_date DATE NOT NULL,
-                    end_date DATE NOT NULL,
-                    FOREIGN KEY (league_id) REFERENCES leagues(id),
-                    UNIQUE(league_id, week_number)
-                )
-            """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS games (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    week_id INTEGER NOT NULL,
-                    team_id INTEGER NOT NULL,
-                    game_number INTEGER NOT NULL,
-                    date TEXT NOT NULL,
-                    opponent_team_id INTEGER,
-                    FOREIGN KEY (week_id) REFERENCES weeks(id),
-                    FOREIGN KEY (team_id) REFERENCES teams(id),
-                    UNIQUE(week_id, team_id, game_number)
-                )
-                """
-            )
-
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS plate_appearances (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_id INTEGER NOT NULL,
-                    game_id INTEGER NOT NULL,
-                    outcome TEXT NOT NULL,
-                    bases INTEGER DEFAULT 0,
-                    rbis INTEGER DEFAULT 0,
-                    runs_scored INTEGER DEFAULT 0,
-                    FOREIGN KEY (player_id) REFERENCES players(id),
-                    FOREIGN KEY (game_id) REFERENCES games(id)
-                )
-            """
-            )
-
-    def _get_connection(self):
-        """Get database connection."""
-        return sqlite3.connect(self.db_path)
 
     def save_league(self, league: League) -> int:
         """Save a league and return its ID."""
@@ -759,7 +752,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 rbis += attempt_rbis
                 runs_scored += attempt_runs
 
-                if outcome_lower == "bb":
+                if outcome_lower.startswith("bb"):
                     walks += 1
                 elif outcome_lower == "k":
                     strikeouts += 1

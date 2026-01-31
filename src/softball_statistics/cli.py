@@ -2,6 +2,8 @@
 Command-line interface for softball statistics.
 """
 
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -223,7 +225,13 @@ Examples:
                 stats_data = self.calculate_stats_use_case.execute(
                     metadata["league"], metadata["team"], metadata["season"]
                 )
-                self.exporter.export(stats_data, args.output)
+                self.exporter.export(
+                    stats_data,
+                    args.output,
+                    metadata["team"],
+                    metadata["season"],
+                    self.calculate_stats_use_case,
+                )
                 print(f"Success! Statistics exported to {args.output}")
 
     def _process_file(
@@ -245,7 +253,13 @@ Examples:
 
             # Export to Excel
             print(f"Exporting to {output_path}...")
-            self.exporter.export(stats_data, output_path)
+            self.exporter.export(
+                stats_data,
+                output_path,
+                metadata["team"],
+                metadata["season"],
+                self.calculate_stats_use_case,
+            )
             print(f"Success! Statistics exported to {output_path}")
 
             # Display parsing warnings if any
@@ -297,7 +311,13 @@ Examples:
                             metadata["league"], metadata["team"], metadata["season"]
                         )
                         print(f"Exporting to {output_path}...")
-                        self.exporter.export(stats_data, output_path)
+                        self.exporter.export(
+                            stats_data,
+                            output_path,
+                            team_name=metadata["team"],
+                            season=metadata["season"],
+                            use_case=self.calculate_stats_use_case,
+                        )
                         print(f"Success! Statistics exported to {output_path}")
                     else:
                         print("Operation cancelled.")
