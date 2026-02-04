@@ -61,6 +61,8 @@ def parse_attempt(
         hit_type, bases = hit_types[base_attempt]
     elif base_attempt == "k":
         hit_type, bases = "out", 0  # Strikeout is an out
+    elif base_attempt == "o":
+        hit_type, bases = "out", 0  # Out
     elif base_attempt == "bb":
         hit_type, bases = "walk", 0
     elif base_attempt in special_outs:

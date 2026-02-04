@@ -101,6 +101,17 @@ class TestIsOutNotation:
             "warnings": [],
         }
 
+    def test_simple_out(self):
+        """Test parsing a simple out (O)."""
+        result = parse_attempt("O")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
     def test_walk(self):
         """Test parsing a walk (BB)."""
         result = parse_attempt("BB")
@@ -196,6 +207,39 @@ class TestIsOutNotation:
             "hit_type": "out",
             "bases": 0,
             "rbis": 0,
+            "runs_scored": 1,
+            "warnings": [],
+        }
+
+    def test_simple_out_with_rbi(self):
+        """Test parsing a simple out with RBI (O*)."""
+        result = parse_attempt("O*")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 1,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_simple_out_with_runs_scored(self):
+        """Test parsing a simple out with runs scored (O+)."""
+        result = parse_attempt("O+")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 1,
+            "warnings": [],
+        }
+
+    def test_simple_out_with_multiple_modifiers(self):
+        """Test parsing a simple out with both RBI and runs scored (O*+)."""
+        result = parse_attempt("O*+")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 1,
             "runs_scored": 1,
             "warnings": [],
         }
