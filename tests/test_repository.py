@@ -219,3 +219,63 @@ class TestSQLiteRepository:
             cursor.execute("SELECT COUNT(*) FROM parsing_warnings")
             count = cursor.fetchone()[0]
             assert count == 2
+
+    def test_home_run_outs_counting(self, repo):
+        """Test that HRO outcomes are counted correctly in player stats."""
+        # Create league, team, player, week, and game
+        with repo._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO leagues (name, season) VALUES (?, ?)",
+                ("Test League", "Winter 2024"),
+            )
+            league_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO teams (league_id, name) VALUES (?, ?)",
+                (league_id, "Test Team"),
+            )
+            team_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO players (team_id, name) VALUES (?, ?)",
+                (team_id, "Test Player"),
+            )
+            player_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO weeks (league_id, week_number, start_date, end_date) VALUES (?, ?, date('now'), date('now'))",
+                (league_id, 1),
+            )
+            week_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO games (week_id, team_id, game_number, date) VALUES (?, ?, ?, date('now'))",
+                (week_id, team_id, 1),
+            )
+            game_id = cursor.lastrowid
+
+            # Insert plate appearances: 1 hit, 1 walk, 1 HRO, 1 strikeout
+            cursor.execute(
+                "INSERT INTO plate_appearances (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
+                (player_id, game_id, "1B", 1, 0, 0),  # Single
+            )
+            cursor.execute(
+                "INSERT INTO plate_appearances (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
+                (player_id, game_id, "BB", 0, 0, 0),  # Walk
+            )
+            cursor.execute(
+                "INSERT INTO plate_appearances (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
+                (player_id, game_id, "HRO", 0, 0, 0),  # Home Run Out
+            )
+            cursor.execute(
+                "INSERT INTO plate_appearances (player_id, game_id, outcome, bases, rbis, runs_scored) VALUES (?, ?, ?, ?, ?, ?)",
+                (player_id, game_id, "K", 0, 0, 0),  # Strikeout
+            )
+
+        # Get player stats
+        stats = repo.get_player_stats(player_id)
+
+        # Verify stats
+        assert stats is not None
+        assert stats.plate_appearances == 4
+        assert stats.at_bats == 3  # 4 PA - 1 BB = 3 AB
+        assert stats.hits == 1
+        assert stats.walks == 1
+        assert stats.home_run_outs == 1  # HRO should be counted

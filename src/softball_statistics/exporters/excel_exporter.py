@@ -368,6 +368,11 @@ def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
             "Formula": "Fly ball outcomes with RBI",
         },
         {
+            "Abbreviation": "HRO",
+            "Full Name": "Home Run Outs",
+            "Formula": "Automatic outs from home run rule",
+        },
+        {
             "Abbreviation": "RBI",
             "Full Name": "Runs Batted In",
             "Formula": "Runs scored on play",
@@ -444,6 +449,7 @@ def _create_player_summary_sheet(
                             "HR": stats.home_runs,
                             "BB": stats.walks,
                             "SF": stats.sacrifice_flies,
+                            "HRO": stats.home_run_outs,
                             "RBI": stats.rbis,
                             "R": stats.runs_scored,
                             "BA": stats.batting_average,
@@ -462,6 +468,7 @@ def _create_player_summary_sheet(
                         aggregated_players[player_name]["HR"] += stats.home_runs
                         aggregated_players[player_name]["BB"] += stats.walks
                         aggregated_players[player_name]["SF"] += stats.sacrifice_flies
+                        aggregated_players[player_name]["HRO"] += stats.home_run_outs
                         aggregated_players[player_name]["RBI"] += stats.rbis
                         aggregated_players[player_name]["R"] += stats.runs_scored
 
@@ -486,9 +493,9 @@ def _create_player_summary_sheet(
                 if ab > 0
                 else "0.000"
             )
-            player[
-                "OPS"
-            ] = f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
+            player["OPS"] = (
+                f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
+            )
 
             player_data.append(player)
 
@@ -511,12 +518,13 @@ def _create_player_summary_sheet(
         worksheet.column_dimensions["H"].width = 8  # HR
         worksheet.column_dimensions["I"].width = 8  # BB
         worksheet.column_dimensions["J"].width = 8  # SF
-        worksheet.column_dimensions["K"].width = 8  # RBI
-        worksheet.column_dimensions["L"].width = 8  # R
-        worksheet.column_dimensions["M"].width = 10  # BA
-        worksheet.column_dimensions["N"].width = 10  # OBP
-        worksheet.column_dimensions["O"].width = 10  # SLG
-        worksheet.column_dimensions["P"].width = 10  # OPS
+        worksheet.column_dimensions["K"].width = 8  # HRO
+        worksheet.column_dimensions["L"].width = 8  # RBI
+        worksheet.column_dimensions["M"].width = 8  # R
+        worksheet.column_dimensions["N"].width = 10  # BA
+        worksheet.column_dimensions["O"].width = 10  # OBP
+        worksheet.column_dimensions["P"].width = 10  # SLG
+        worksheet.column_dimensions["Q"].width = 10  # OPS
 
         # Add autofilter to column headers
         worksheet.auto_filter.ref = worksheet.dimensions
@@ -675,6 +683,7 @@ def _create_cumulative_team_sheet(
                 "HR": player_info.get("home_runs", 0),
                 "BB": player_info.get("walks", 0),
                 "SF": player_info.get("sacrifice_flies", 0),
+                "HRO": player_info.get("home_run_outs", 0),
                 "RBI": player_info.get("rbis", 0),
                 "R": player_info.get("runs_scored", 0),
                 "BA": f"{player_info.get('batting_average', 0):.3f}",
@@ -705,12 +714,13 @@ def _create_cumulative_team_sheet(
         worksheet.column_dimensions["H"].width = 8  # HR
         worksheet.column_dimensions["I"].width = 8  # BB
         worksheet.column_dimensions["J"].width = 8  # SF
-        worksheet.column_dimensions["K"].width = 8  # RBI
-        worksheet.column_dimensions["L"].width = 8  # R
-        worksheet.column_dimensions["M"].width = 10  # BA
-        worksheet.column_dimensions["N"].width = 10  # OBP
-        worksheet.column_dimensions["O"].width = 10  # SLG
-        worksheet.column_dimensions["P"].width = 10  # OPS
+        worksheet.column_dimensions["K"].width = 8  # HRO
+        worksheet.column_dimensions["L"].width = 8  # RBI
+        worksheet.column_dimensions["M"].width = 8  # R
+        worksheet.column_dimensions["N"].width = 10  # BA
+        worksheet.column_dimensions["O"].width = 10  # OBP
+        worksheet.column_dimensions["P"].width = 10  # SLG
+        worksheet.column_dimensions["Q"].width = 10  # OPS
 
         # Add team totals row
         team_totals = cumulative_stats.get("team_totals", {})
@@ -725,6 +735,7 @@ def _create_cumulative_team_sheet(
             "HR": sum(player["HR"] for player in player_data),
             "BB": sum(player["BB"] for player in player_data),
             "SF": sum(player["SF"] for player in player_data),
+            "HRO": sum(player["HRO"] for player in player_data),
             "RBI": sum(player["RBI"] for player in player_data),
             "R": sum(player["R"] for player in player_data),
             "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
@@ -772,6 +783,7 @@ def _create_season_total_sheet(
                 "HR": player_info.get("home_runs", 0),
                 "BB": player_info.get("walks", 0),
                 "SF": player_info.get("sacrifice_flies", 0),
+                "HRO": player_info.get("home_run_outs", 0),
                 "RBI": player_info.get("rbis", 0),
                 "R": player_info.get("runs_scored", 0),
                 "BA": f"{player_info.get('batting_average', 0):.3f}",
@@ -804,10 +816,11 @@ def _create_season_total_sheet(
             ("J", 8),
             ("K", 8),
             ("L", 8),
-            ("M", 10),
+            ("M", 8),
             ("N", 10),
             ("O", 10),
             ("P", 10),
+            ("Q", 10),
         ]:
             worksheet.column_dimensions[col].width = width
 
@@ -824,6 +837,7 @@ def _create_season_total_sheet(
             "HR": sum(player["HR"] for player in player_data),
             "BB": sum(player["BB"] for player in player_data),
             "SF": sum(player["SF"] for player in player_data),
+            "HRO": sum(player["HRO"] for player in player_data),
             "RBI": sum(player["RBI"] for player in player_data),
             "R": sum(player["R"] for player in player_data),
             "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
@@ -873,6 +887,7 @@ def _create_per_game_sheet(
                 "HR": player_info.get("home_runs", 0),
                 "BB": player_info.get("walks", 0),
                 "SF": player_info.get("sacrifice_flies", 0),
+                "HRO": player_info.get("home_run_outs", 0),
                 "RBI": player_info.get("rbis", 0),
                 "R": player_info.get("runs_scored", 0),
                 "BA": f"{player_info.get('batting_average', 0):.3f}",
@@ -903,12 +918,13 @@ def _create_per_game_sheet(
             ("H", 8),  # HR
             ("I", 8),  # BB
             ("J", 8),  # SF
-            ("K", 8),  # RBI
-            ("L", 8),  # R
-            ("M", 10),  # BA
-            ("N", 10),  # OBP
-            ("O", 10),  # SLG
-            ("P", 10),  # OPS
+            ("K", 8),  # HRO
+            ("L", 8),  # RBI
+            ("M", 8),  # R
+            ("N", 10),  # BA
+            ("O", 10),  # OBP
+            ("P", 10),  # SLG
+            ("Q", 10),  # OPS
         ]:
             worksheet.column_dimensions[col].width = width
 
@@ -925,6 +941,7 @@ def _create_per_game_sheet(
                 "HR": sum(player["HR"] for player in player_data),
                 "BB": sum(player["BB"] for player in player_data),
                 "SF": sum(player["SF"] for player in player_data),
+                "HRO": sum(player["HRO"] for player in player_data),
                 "RBI": sum(player["RBI"] for player in player_data),
                 "R": sum(player["R"] for player in player_data),
                 "BA": f"{calculate_batting_average(sum(player['H'] for player in player_data), sum(player['AB'] for player in player_data)):.3f}",

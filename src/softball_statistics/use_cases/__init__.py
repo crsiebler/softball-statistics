@@ -145,6 +145,7 @@ class CalculateStatsUseCase:
                         "plate_appearances": stats.plate_appearances,
                         "walks": stats.walks,
                         "sacrifice_flies": stats.sacrifice_flies,
+                        "home_run_outs": stats.home_run_outs,
                     }
                     players_data.append(player_stats_dict)
 
@@ -190,6 +191,9 @@ class CalculateStatsUseCase:
         total_walks = sum(player.get("walks", 0) for player in players_data)
         total_sacrifice_flies = sum(
             player.get("sacrifice_flies", 0) for player in players_data
+        )
+        total_home_run_outs = sum(
+            player.get("home_run_outs", 0) for player in players_data
         )
 
         # Calculate team batting average
@@ -282,6 +286,7 @@ class CalculateStatsUseCase:
                             "plate_appearances": stats.plate_appearances,
                             "walks": stats.walks,
                             "sacrifice_flies": stats.sacrifice_flies,
+                            "home_run_outs": stats.home_run_outs,
                         }
                     else:
                         # Sum the stats
@@ -302,6 +307,9 @@ class CalculateStatsUseCase:
                         aggregated_players[player_name][
                             "sacrifice_flies"
                         ] += stats.sacrifice_flies
+                        aggregated_players[player_name][
+                            "home_run_outs"
+                        ] += stats.home_run_outs
 
         # Recalculate derived stats after aggregation
         players_data = []
@@ -390,6 +398,7 @@ class CalculateStatsUseCase:
             rbis = 0
             runs_scored = 0
             sacrifice_flies = 0
+            home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
                 outcome_lower = outcome.lower()
@@ -398,6 +407,8 @@ class CalculateStatsUseCase:
 
                 if outcome_lower.startswith("bb"):
                     walks += 1
+                elif outcome_lower == "hro":
+                    home_run_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -430,6 +441,7 @@ class CalculateStatsUseCase:
                 "home_runs": home_runs,
                 "walks": walks,
                 "sacrifice_flies": sacrifice_flies,
+                "home_run_outs": home_run_outs,
                 "rbis": rbis,
                 "runs_scored": runs_scored,
                 "batting_average": calculate_batting_average(hits, at_bats)
@@ -493,6 +505,7 @@ class CalculateStatsUseCase:
                     "home_runs": 0,
                     "walks": 0,
                     "sacrifice_flies": 0,
+                    "home_run_outs": 0,
                     "rbis": 0,
                     "runs_scored": 0,
                 }
@@ -505,6 +518,8 @@ class CalculateStatsUseCase:
             outcome_lower = outcome.lower()
             if outcome_lower.startswith("bb"):
                 player["walks"] += 1
+            elif outcome_lower == "hro":
+                player["home_run_outs"] += 1
             elif bases > 0:
                 player["hits"] += 1
                 if bases == 1:

@@ -306,6 +306,7 @@ class SQLiteQueryRepository(QueryRepository):
             rbis = 0
             runs_scored = 0
             sacrifices = 0
+            home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
                 outcome_lower = outcome.lower()
@@ -316,6 +317,8 @@ class SQLiteQueryRepository(QueryRepository):
                     walks += 1
                 elif outcome_lower == "k":
                     strikeouts += 1
+                elif outcome_lower == "hro":
+                    home_run_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -362,6 +365,10 @@ class SQLiteQueryRepository(QueryRepository):
                 on_base_percentage=stats_dict["on_base_percentage"],
                 slugging_percentage=stats_dict["slugging_percentage"],
                 ops=stats_dict["ops"],
+                plate_appearances=plate_appearances,
+                walks=walks,
+                sacrifice_flies=sacrifice_flies,
+                home_run_outs=home_run_outs,
             )
 
 
@@ -746,6 +753,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             rbis = 0
             runs_scored = 0
             sacrifice_flies = 0
+            home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
                 outcome_lower = outcome.lower()
@@ -756,6 +764,8 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                     walks += 1
                 elif outcome_lower == "k":
                     strikeouts += 1
+                elif outcome_lower == "hro":
+                    home_run_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -806,6 +816,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                 plate_appearances=int(stats_dict["plate_appearances"]),
                 walks=walks,
                 sacrifice_flies=sacrifice_flies,
+                home_run_outs=home_run_outs,
             )
 
     def save_game_data(self, objects: Dict[str, Any]) -> None:

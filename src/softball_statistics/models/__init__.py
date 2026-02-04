@@ -128,6 +128,7 @@ class PlayerStats:
     plate_appearances: int = 0
     walks: int = 0
     sacrifice_flies: int = 0
+    home_run_outs: int = 0
 
     def __post_init__(self):
         if self.player_id < 1:
@@ -144,6 +145,7 @@ class PlayerStats:
             "plate_appearances",
             "walks",
             "sacrifice_flies",
+            "home_run_outs",
         ]:
             if getattr(self, field) < 0:
                 raise ValueError(f"{field} cannot be negative")
