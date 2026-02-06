@@ -161,11 +161,6 @@ Examples:
         from pathlib import Path
 
         print("⚠️  This will wipe the database and reparse all files in data/input/")
-        if not args.force:
-            response = input("Continue? (y/N): ")
-            if response.lower() not in ["y", "yes"]:
-                print("Operation cancelled.")
-                return
 
         print("Wiping database...")
         # Clear all data
@@ -196,8 +191,6 @@ Examples:
 
         print(f"Found {len(csv_files)} CSV files to process...")
 
-        from softball_statistics.parsers.filename_parser import parse_filename
-
         success_count = 0
         error_count = 0
 
@@ -217,20 +210,12 @@ Examples:
             print("Database has been rebuilt with formatted team/league names.")
             # Export stats if output path provided
             if hasattr(args, "output") and args.output:
-                # Get metadata from the last processed file
-                last_file = csv_files[-1]
-                metadata = parse_filename(last_file.name)
-                assert metadata["league"] is not None
-                assert metadata["team"] is not None
-                assert metadata["season"] is not None
-                stats_data = self.calculate_stats_use_case.execute(
-                    metadata["league"], metadata["team"], metadata["season"]
-                )
+                # Export all teams' stats
                 self.exporter.export(
-                    stats_data,
+                    {},
                     args.output,
-                    metadata["team"],
-                    metadata["season"],
+                    None,
+                    None,
                     self.calculate_stats_use_case,
                 )
                 print(f"Success! Statistics exported to {args.output}")

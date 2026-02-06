@@ -45,6 +45,32 @@ class ExcelExporter:
         export_to_excel(data, output_path, self.query_repo, team_name, season, use_case)
 
 
+def _abbreviate_team_name(team_name: str) -> str:
+    """
+    Abbreviate team name to 5 characters for Excel sheet names.
+
+    - Multiple words: creates acronym from first letters
+    - Single word: truncates/pads to optimal length
+    - Deterministic: same input always produces same output
+    """
+    if not team_name:
+        return "Unknown"
+
+    words = team_name.replace("_", " ").split()
+
+    if len(words) > 1:
+        # Create acronym from first letters of words
+        acronym = "".join(word[0].upper() for word in words if word)
+        return acronym[:5]  # Cap at 5 chars (acronyms are usually shorter)
+    else:
+        # Single word: aim for 5 characters
+        word = words[0] if words else team_name
+        if len(word) <= 5:
+            return word
+        else:
+            return word[:5]  # Truncate to 5 chars
+
+
 def export_to_excel(
     stats_data: Dict[str, Any],
     output_path: str,
@@ -272,7 +298,7 @@ def _create_team_sheet(
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{team_name[:25]}"  # Excel sheet names limited to 31 chars
+        sheet_name = f"{_abbreviate_team_name(team_name)}"  # Excel sheet names limited to 31 chars
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format the sheet
@@ -698,7 +724,7 @@ def _create_cumulative_team_sheet(
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{team_name} Total"
+        sheet_name = f"{_abbreviate_team_name(team_name)} Total"
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format the sheet
@@ -797,7 +823,7 @@ def _create_season_total_sheet(
         df = pd.DataFrame(player_data)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{team_name} {season} Total"
+        sheet_name = f"{_abbreviate_team_name(team_name)} {season} Total"
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format
@@ -901,7 +927,7 @@ def _create_per_game_sheet(
         df = pd.DataFrame(player_data)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{team_name} {game_stat.get('season', 'Unknown')} Game {game_stat.get('game_number', 0)}"
+        sheet_name = f"{_abbreviate_team_name(team_name)} {game_stat.get('season', 'Unknown')} Game {game_stat.get('game_number', 0)}"
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format

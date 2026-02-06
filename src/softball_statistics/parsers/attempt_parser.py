@@ -115,7 +115,8 @@ def parse_attempt(
 
     # Check for invalid consecutive same modifiers (2+ in a row)
     # Skip this check for HR since HR**** is valid (4 RBIs)
-    if base_attempt != "hr" and re.search(r"\*\*{2,}|\+{2,}", attempt):
+    # Only reject consecutive + modifiers, allow consecutive * for multiple RBIs
+    if base_attempt != "hr" and re.search(r"\+{2,}", attempt):
         raise AttemptParseError(f"Invalid consecutive same modifiers in '{attempt}'")
 
     # Limit total modifiers to reasonable amounts

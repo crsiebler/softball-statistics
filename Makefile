@@ -23,7 +23,7 @@ run:  ## Run console script (requires install first)
 	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --file $(FILE) --output data/output/stats.xlsx --replace-existing --db data/output/stats.db
 
 run-all:  ## Run console script to parse all CSV files and export
-	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --reparse-all --force --output data/output/stats.xlsx --db data/output/stats.db
+	source $(CONDA_PROFILE) && conda activate softball-stats && softball-stats --reparse-all --output data/output/stats.xlsx --db data/output/stats.db
 
 clean:  ## Clean up generated files
 	rm -rf dist/ build/ *.egg-info/

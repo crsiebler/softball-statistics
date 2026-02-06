@@ -6,6 +6,7 @@ from openpyxl import load_workbook
 
 from softball_statistics.exporters.excel_exporter import (
     ExcelExportError,
+    _abbreviate_team_name,
     export_to_excel,
 )
 
@@ -219,9 +220,10 @@ class TestExcelExporter:
         try:
             export_to_excel(stats_data, output_path)
 
-            # Load the workbook and check autofilter on Cyclones sheet
+            # Load the workbook and check autofilter on abbreviated team sheet
             wb = load_workbook(output_path)
-            sheet = wb["Cyclones"]
+            sheet_name = _abbreviate_team_name("Cyclones")
+            sheet = wb[sheet_name]
 
             # Check that autofilter is applied
             assert sheet.auto_filter.ref is not None
