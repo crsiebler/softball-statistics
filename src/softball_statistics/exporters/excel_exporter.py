@@ -256,27 +256,31 @@ def _build_summary_from_stats_data(
 ) -> list[Dict[str, Any]]:
     """Build league summary data from stats_data (fallback method)."""
     summary_data = []
-    
+
     # Get league name from stats_data if available
     default_league = stats_data.get("league_name", "Unknown League")
     if default_league and isinstance(default_league, str):
         # Convert snake_case to Title Case (e.g., "phx_fray" -> "Phx Fray")
-        default_league = " ".join(word.capitalize() for word in default_league.split("_"))
-    
+        default_league = " ".join(
+            word.capitalize() for word in default_league.split("_")
+        )
+
     for team_name, team_stats in stats_data.get("team_stats", {}).items():
         league_name = _get_league_for_team(team_name, query_repo, default_league)
-        
+
         # Calculate team stats from player data
         players = team_stats.get("players", [])
         total_players = len(players)
-        
+
         # Aggregate team totals
-        total_games = team_stats.get("games_played", 0)  # Use games_played from stats if available
+        total_games = team_stats.get(
+            "games_played", 0
+        )  # Use games_played from stats if available
         team_ba = team_stats.get("team_batting_average", 0)
         team_obp = team_stats.get("team_on_base_percentage", 0)
         team_slg = team_stats.get("team_slugging_percentage", 0)
         team_ops = team_stats.get("team_ops", 0)
-        
+
         summary_data.append(
             {
                 "League": league_name,
@@ -811,7 +815,8 @@ def _create_cumulative_team_sheet(
             bottom=Side(style="thin"),
         )
         totals_row_num = worksheet.max_row
-        for col in range(1, 17):
+        num_cols = len(totals_row)
+        for col in range(1, num_cols + 1):
             cell = worksheet.cell(row=totals_row_num, column=col)
             cell.border = thin_border
 
@@ -913,7 +918,8 @@ def _create_season_total_sheet(
             bottom=Side(style="thin"),
         )
         totals_row_num = worksheet.max_row
-        for col in range(1, 17):
+        num_cols = len(totals_row)
+        for col in range(1, num_cols + 1):
             cell = worksheet.cell(row=totals_row_num, column=col)
             cell.border = thin_border
 
@@ -1017,7 +1023,8 @@ def _create_per_game_sheet(
                 bottom=Side(style="thin"),
             )
             totals_row_num = worksheet.max_row
-            for col in range(1, 17):
+            num_cols = len(totals_row)
+            for col in range(1, num_cols + 1):
                 cell = worksheet.cell(row=totals_row_num, column=col)
                 cell.border = thin_border
 
