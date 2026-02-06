@@ -4,7 +4,7 @@ Use cases for softball statistics application.
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from softball_statistics.calculators.stats_calculator import (
     calculate_batting_average,
@@ -563,6 +563,58 @@ class CalculateStatsUseCase:
             result.append(player)
 
         return result
+
+    def get_league_summary_data(self) -> List[Dict[str, Any]]:
+        """Get comprehensive summary data for all teams across all leagues/seasons.
+
+        Returns list of dicts with keys:
+        - League: league name
+        - Team: team name
+        - Games Played: total games across all seasons
+        - Total Players: total players who appeared for team
+        - Team BA/OBP/SLG/OPS: aggregated team stats
+        """
+        from softball_statistics.repository.sqlite import SQLiteQueryRepository
+
+        if not isinstance(self.query_repo, SQLiteQueryRepository):
+            return []
+
+        summary_data = []
+
+        # Get all leagues, sorted by name
+        leagues = sorted(self.query_repo.list_leagues(), key=lambda l: l.name)
+
+        for league in leagues:
+            if not league.id:
+                continue  # Skip leagues without ID
+            # Get all teams in league, sorted by name
+            teams = sorted(
+                self.query_repo.list_teams_by_league(league.id), key=lambda t: t.name
+            )
+
+            for team in teams:
+                # Get cumulative stats across all seasons
+                cumulative_stats = self.get_cumulative_team_stats(team.name)
+
+                # Extract required data
+                games_played = cumulative_stats.get("games_played", 0)
+                players = cumulative_stats.get("players", [])
+                team_totals = cumulative_stats.get("team_totals", {})
+
+                summary_data.append(
+                    {
+                        "League": league.name,
+                        "Team": team.name,
+                        "Games Played": games_played,
+                        "Total Players": len(players),
+                        "Team BA": f"{team_totals.get('team_batting_average', 0):.3f}",
+                        "Team OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
+                        "Team SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
+                        "Team OPS": f"{team_totals.get('team_ops', 0):.3f}",
+                    }
+                )
+
+        return summary_data
 
 
 class ListLeaguesUseCase:

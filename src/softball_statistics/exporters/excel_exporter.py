@@ -98,7 +98,7 @@ def export_to_excel(
             _create_legend_sheet(writer)
 
             # Always create league summary sheet
-            _create_league_summary_sheet(stats_data, writer, query_repo)
+            _create_league_summary_sheet(stats_data, writer, query_repo, use_case)
 
             # Create comprehensive player summary sheet (if query_repo available)
             if query_repo:
@@ -201,41 +201,28 @@ def _create_league_summary_sheet(
     stats_data: Dict[str, Any],
     writer: pd.ExcelWriter,
     query_repo: Optional[QueryRepository] = None,
+    use_case=None,
 ) -> None:
-    """Create the league summary sheet."""
+    """Create the league summary sheet with comprehensive database data."""
+
+    # Try database-driven approach first
     summary_data = []
-    for team_name, team_stats in stats_data.get("team_stats", {}).items():
-        # Get actual league name from database
-        league_name = _get_league_for_team(
-            team_name, query_repo, stats_data.get("league_name", "Unknown League")
-        )
-        league_name = league_name.replace("_", " ").title()
+    if use_case and hasattr(use_case, "get_league_summary_data"):
+        try:
+            summary_data = use_case.get_league_summary_data()
+        except Exception as e:
+            logger.warning(f"Failed to get league summary from database: {e}")
 
-        # Calculate team totals for PA, BB, SF (removed from display but kept for potential future use)
-        players = team_stats.get("players", [])
-        sum(p.get("plate_appearances", 0) for p in players)
-        sum(p.get("walks", 0) for p in players)
-        sum(p.get("sacrifice_flies", 0) for p in players)
+    # Fallback to stats_data if database approach failed or unavailable
+    if not summary_data:
+        summary_data = _build_summary_from_stats_data(stats_data, query_repo)
 
-        summary_data.append(
-            {
-                "League": league_name,
-                "Team": team_name,
-                "Games Played": team_stats.get("games_played", 0),
-                "Total Players": len(players),
-                "Team BA": f"{team_stats.get('team_batting_average', 0):.3f}",
-                "Team OBP": f"{team_stats.get('team_on_base_percentage', 0):.3f}",
-                "Team SLG": f"{team_stats.get('team_slugging_percentage', 0):.3f}",
-                "Team OPS": f"{team_stats.get('team_ops', 0):.3f}",
-            }
-        )
-
-    # Always create at least a summary sheet, even if empty
+    # Handle empty case
     if not summary_data:
         summary_data = [
             {
-                "League": "Unknown League",
-                "Team": "No teams found",
+                "League": "No Data Available",
+                "Team": "No teams found in database",
                 "Games Played": 0,
                 "Total Players": 0,
                 "Team BA": "0.000",
@@ -245,6 +232,7 @@ def _create_league_summary_sheet(
             }
         ]
 
+    # Create DataFrame and Excel sheet
     df = pd.DataFrame(summary_data)
     df.to_excel(writer, sheet_name="League Summary", index=False)
 
@@ -261,6 +249,51 @@ def _create_league_summary_sheet(
 
     # Add autofilter to column headers
     worksheet.auto_filter.ref = worksheet.dimensions
+
+
+def _build_summary_from_stats_data(
+    stats_data: Dict[str, Any], query_repo: Optional[QueryRepository]
+) -> list[Dict[str, Any]]:
+    """Build league summary data from stats_data (fallback method)."""
+    summary_data = []
+    
+    # Get league name from stats_data if available
+    default_league = stats_data.get("league_name", "Unknown League")
+    if default_league and isinstance(default_league, str):
+        # Convert snake_case to Title Case (e.g., "phx_fray" -> "Phx Fray")
+        default_league = " ".join(word.capitalize() for word in default_league.split("_"))
+    
+    for team_name, team_stats in stats_data.get("team_stats", {}).items():
+        league_name = _get_league_for_team(team_name, query_repo, default_league)
+        
+        # Calculate team stats from player data
+        players = team_stats.get("players", [])
+        total_players = len(players)
+        
+        # Aggregate team totals
+        total_games = team_stats.get("games_played", 0)  # Use games_played from stats if available
+        team_ba = team_stats.get("team_batting_average", 0)
+        team_obp = team_stats.get("team_on_base_percentage", 0)
+        team_slg = team_stats.get("team_slugging_percentage", 0)
+        team_ops = team_stats.get("team_ops", 0)
+        
+        summary_data.append(
+            {
+                "League": league_name,
+                "Team": team_name,
+                "Games Played": total_games,
+                "Total Players": total_players,
+                "Team BA": f"{team_ba:.3f}",
+                "Team OBP": f"{team_obp:.3f}",
+                "Team SLG": f"{team_slg:.3f}",
+                "Team OPS": f"{team_ops:.3f}",
+            }
+        )
+
+    # Sort by league name, then team name
+    summary_data.sort(key=lambda x: (x["League"], x["Team"]))
+
+    return summary_data
 
 
 def _create_team_sheet(
@@ -519,9 +552,9 @@ def _create_player_summary_sheet(
                 if ab > 0
                 else "0.000"
             )
-            player["OPS"] = (
-                f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
-            )
+            player[
+                "OPS"
+            ] = f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
 
             player_data.append(player)
 
@@ -671,7 +704,7 @@ def _get_league_for_team(
     from softball_statistics.repository.sqlite import SQLiteQueryRepository
 
     if not isinstance(query_repo, SQLiteQueryRepository):
-        return "Unknown"
+        return default_league
 
     with query_repo._get_connection() as conn:
         cursor = conn.cursor()
@@ -685,7 +718,7 @@ def _get_league_for_team(
             (team_name,),
         )
         row = cursor.fetchone()
-        return row[0] if row else "Unknown"
+        return row[0] if row else default_league
 
 
 def _create_cumulative_team_sheet(
