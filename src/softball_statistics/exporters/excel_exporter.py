@@ -240,7 +240,7 @@ def _create_league_summary_sheet(
     worksheet = writer.sheets["League Summary"]
     worksheet.column_dimensions["A"].width = 20  # League
     worksheet.column_dimensions["B"].width = 20  # Team
-    worksheet.column_dimensions["C"].width = 15  # Games Played
+    worksheet.column_dimensions["C"].width = 20  # Games Played
     worksheet.column_dimensions["D"].width = 16  # Total Players
     worksheet.column_dimensions["E"].width = 12  # Team BA
     worksheet.column_dimensions["F"].width = 12  # Team OBP
