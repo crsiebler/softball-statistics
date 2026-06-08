@@ -242,7 +242,6 @@ class CalculateStatsUseCase:
         if not isinstance(self.query_repo, SQLiteQueryRepository):
             raise ValueError("Cumulative stats require SQLite repository")
 
-        aggregated_players = {}
         all_team_ids = []
 
         with self.query_repo._get_connection() as conn:
@@ -255,7 +254,16 @@ class CalculateStatsUseCase:
         if not all_team_ids:
             return {"players": [], "team_totals": self._calculate_team_totals([])}
 
+        return self._get_cumulative_team_stats_for_team_ids(all_team_ids)
+
+    def _get_cumulative_team_stats_for_team_ids(
+        self, team_ids: list[int]
+    ) -> Dict[str, Any]:
+        """Get cumulative stats across explicit season-specific team IDs."""
+        all_team_ids = team_ids
+
         # Get all players for these teams and aggregate by player_name
+        aggregated_players = {}
         for team_id in all_team_ids:
             with self.query_repo._get_connection() as conn:
                 cursor = conn.cursor()
@@ -579,7 +587,7 @@ class CalculateStatsUseCase:
         if not isinstance(self.query_repo, SQLiteQueryRepository):
             return []
 
-        summary_data = []
+        team_groups: dict[tuple[str, str], list[int]] = {}
 
         # Get all leagues, sorted by name
         leagues = sorted(self.query_repo.list_leagues(), key=lambda l: l.name)
@@ -593,26 +601,35 @@ class CalculateStatsUseCase:
             )
 
             for team in teams:
-                # Get cumulative stats across all seasons
-                cumulative_stats = self.get_cumulative_team_stats(team.name)
+                if not team.id:
+                    continue
+                team_groups.setdefault((league.name, team.name), []).append(team.id)
 
-                # Extract required data
-                games_played = cumulative_stats.get("games_played", 0)
-                players = cumulative_stats.get("players", [])
-                team_totals = cumulative_stats.get("team_totals", {})
+        summary_data = []
 
-                summary_data.append(
-                    {
-                        "League": league.name,
-                        "Team": team.name,
-                        "Games Played": games_played,
-                        "Total Players": len(players),
-                        "Team BA": f"{team_totals.get('team_batting_average', 0):.3f}",
-                        "Team OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
-                        "Team SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
-                        "Team OPS": f"{team_totals.get('team_ops', 0):.3f}",
-                    }
-                )
+        for league_name, team_name in sorted(team_groups):
+            # Get cumulative stats for this league/team across all seasons
+            cumulative_stats = self._get_cumulative_team_stats_for_team_ids(
+                team_groups[(league_name, team_name)]
+            )
+
+            # Extract required data
+            games_played = cumulative_stats.get("games_played", 0)
+            players = cumulative_stats.get("players", [])
+            team_totals = cumulative_stats.get("team_totals", {})
+
+            summary_data.append(
+                {
+                    "League": league_name,
+                    "Team": team_name,
+                    "Games Played": games_played,
+                    "Total Players": len(players),
+                    "Team BA": f"{team_totals.get('team_batting_average', 0):.3f}",
+                    "Team OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
+                    "Team SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
+                    "Team OPS": f"{team_totals.get('team_ops', 0):.3f}",
+                }
+            )
 
         return summary_data
 

@@ -47,7 +47,7 @@ def parse_attempt(
     }
 
     # Special cases for outs
-    special_outs = ["hpo", "fo", "hro"]
+    special_outs = ["hpo", "fo", "hro", "if"]
 
     # Count modifiers
     rbis = attempt.count("*")

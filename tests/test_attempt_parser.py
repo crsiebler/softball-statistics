@@ -310,6 +310,17 @@ class TestIsOutNotation:
             "warnings": [],
         }
 
+    def test_special_out_if(self):
+        """Test parsing infield fly (IF)."""
+        result = parse_attempt("IF")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
     @pytest.mark.parametrize(
         "invalid_attempt",
         [
