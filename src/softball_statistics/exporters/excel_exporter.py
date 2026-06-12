@@ -556,9 +556,9 @@ def _create_player_summary_sheet(
                 if ab > 0
                 else "0.000"
             )
-            player[
-                "OPS"
-            ] = f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
+            player["OPS"] = (
+                f"{calculate_ops(float(player['OBP']), float(player['SLG'])):.3f}"
+            )
 
             player_data.append(player)
 
@@ -603,28 +603,21 @@ def _get_seasons_for_team(
 
     if not isinstance(query_repo, SQLiteQueryRepository):
         return []
-    seasons = set()
     with query_repo._get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT l.season FROM leagues l
+            SELECT l.season, MIN(g.date) as first_game_date
+            FROM leagues l
             JOIN teams t ON t.league_id = l.id
+            LEFT JOIN games g ON g.team_id = t.id
             WHERE t.name = ?
+            GROUP BY l.season
+            ORDER BY first_game_date IS NULL, first_game_date DESC, l.season
             """,
             (team_name,),
         )
-        for row in cursor.fetchall():
-            seasons.add(row[0])
-
-    # Sort by year if possible
-    def sort_key(s):
-        parts = s.split()
-        if len(parts) > 1 and parts[-1].isdigit():
-            return int(parts[-1])
-        return 0
-
-    return sorted(seasons, key=sort_key)
+        return [row[0] for row in cursor.fetchall()]
 
 
 def _get_league_for_team_season(
