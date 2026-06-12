@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import date
 
 import pytest
 from openpyxl import load_workbook
@@ -7,11 +8,61 @@ from openpyxl import load_workbook
 from softball_statistics.exporters.excel_exporter import (
     ExcelExportError,
     _abbreviate_team_name,
+    _get_seasons_for_team,
     export_to_excel,
 )
+from softball_statistics.models import Game, League, Team, Week
+from softball_statistics.repository.sqlite import SQLiteRepository
 
 
 class TestExcelExporter:
+    def test_get_seasons_for_team_sorts_by_first_game_date(self, tmp_path):
+        """Season tabs should follow each season's first game date."""
+        repo = SQLiteRepository(str(tmp_path / "test.db"))
+
+        summer_league_id = repo.save_league(League(None, "Fray", "Summer 2027"))
+        summer_team_id = repo.save_team(Team(None, summer_league_id, "Cyclones"))
+        summer_week_id = repo.save_week(
+            Week(
+                None,
+                summer_league_id,
+                1,
+                date(2025, 6, 1),
+                date(2025, 6, 7),
+            )
+        )
+        repo.save_game(
+            Game(
+                week_id=summer_week_id,
+                team_id=summer_team_id,
+                date=date(2025, 6, 1),
+            )
+        )
+
+        winter_league_id = repo.save_league(League(None, "Fray", "Winter 2026"))
+        winter_team_id = repo.save_team(Team(None, winter_league_id, "Cyclones"))
+        winter_week_id = repo.save_week(
+            Week(
+                None,
+                winter_league_id,
+                1,
+                date(2026, 1, 1),
+                date(2026, 1, 7),
+            )
+        )
+        repo.save_game(
+            Game(
+                week_id=winter_week_id,
+                team_id=winter_team_id,
+                date=date(2026, 1, 1),
+            )
+        )
+
+        assert _get_seasons_for_team("Cyclones", repo) == [
+            "Winter 2026",
+            "Summer 2027",
+        ]
+
     def test_export_basic_stats(self):
         """Test exporting basic team statistics."""
         stats_data = {

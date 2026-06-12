@@ -24,11 +24,15 @@ class TestAttemptParser:
 
 
 class TestIsOutNotation:
-    @pytest.mark.parametrize("attempt", ["F1", "F9", "F10", "f1", "f10"])
+    @pytest.mark.parametrize(
+        "attempt", ["F1", "F9", "F10", "f1", "f10", "F6-4", "F10-4-3"]
+    )
     def test_is_fly_ball_valid(self, attempt):
         assert _is_fly_ball(attempt) is True
 
-    @pytest.mark.parametrize("attempt", ["F11", "F0", "F", "f11", "G1"])
+    @pytest.mark.parametrize(
+        "attempt", ["F11", "F0", "F", "f11", "G1", "F6-11", "F11-4", "F6-"]
+    )
     def test_is_fly_ball_invalid(self, attempt):
         assert _is_fly_ball(attempt) is False
 
@@ -126,6 +130,28 @@ class TestIsOutNotation:
     def test_out_with_fly_ball(self):
         """Test parsing an out (F4)."""
         result = parse_attempt("F4")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_out_with_fly_ball_double_play(self):
+        """Test parsing a fly ball double play (F6-4)."""
+        result = parse_attempt("F6-4")
+        assert result == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_out_with_fly_ball_triple_play(self):
+        """Test parsing a fly ball triple play (F6-4-3)."""
+        result = parse_attempt("F6-4-3")
         assert result == {
             "hit_type": "out",
             "bases": 0,

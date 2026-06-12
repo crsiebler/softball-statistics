@@ -135,9 +135,9 @@ def parse_attempt(
 
 
 def _is_fly_ball(attempt: str) -> bool:
-    """Check if attempt is a fly ball (F1-F10)."""
+    """Check if attempt is a fly ball (F1-F10), including double/triple plays."""
     attempt = attempt.lower()
-    return re.match(r"^f(10|[1-9])$", attempt) is not None
+    return re.match(r"^f(?:10|[1-9])(?:-(?:10|[1-9]))*$", attempt) is not None
 
 
 def _is_ground_ball(attempt: str) -> bool:
@@ -171,7 +171,7 @@ def _is_out_notation(attempt: str) -> bool:
     Check if an attempt string represents an out.
 
     Valid out notations include:
-    - Fly balls: F followed by number 1-10 (F4, F8, F10, etc.)
+    - Fly balls: F followed by number 1-10 (F4, F8, F10, F6-4, etc.)
     - Ground balls: number-number (5-1, 6-4, 10-1, 4-6-3, etc.) - positions 1-10
     - Other common out notations: A1, P3, etc. - positions 1-10
     - Simple fielding positions: single digit 1-10 (4, 8, etc.) - assumed to be fly balls
