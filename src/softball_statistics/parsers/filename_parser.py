@@ -6,6 +6,18 @@ class FilenameParseError(Exception):
     """Raised when a filename cannot be parsed."""
 
 
+SEASON_ACRONYMS = {
+    "wt": "Winter",
+    "lwt": "Late Winter",
+    "sp": "Spring",
+    "lsp": "Late Spring",
+    "su": "Summer",
+    "lsu": "Late Summer",
+    "fa": "Fall",
+    "lfa": "Late Fall",
+}
+
+
 def parse_filename(filename: str) -> Dict[str, Optional[str]]:
     """
     Parse a CSV filename with format: <league>-<team>-<season>-<game>[_<date>].csv
@@ -79,8 +91,9 @@ def parse_filename(filename: str) -> Dict[str, Optional[str]]:
     league = league.replace("_", " ").title()
     team = team.replace("_", " ").title()
 
-    # Transform season and append year
-    season = season.replace("_", " ").title()
+    # Expand supported season acronyms and preserve existing season names.
+    season_key = season.lower()
+    season = SEASON_ACRONYMS.get(season_key, season.replace("_", " ").title())
     if date:
         year = date.split("-")[0]  # Extract year from YYYY-MM-DD
         season = f"{season} {year}"
