@@ -38,7 +38,7 @@ pip install softball-statistics
 
 ```bash
 # Process a game file
-softball-stats --file data/input/fray-cyclones-winter-01_2026-01-29.csv --output data/output/stats.xlsx
+softball-stats --file data/input/fray-cyclones-wt-01_2026-01-29.csv --output data/output/stats.xlsx
 
 # List available leagues
 softball-stats --list-leagues
@@ -98,7 +98,7 @@ softball-statistics/
 ├── tests/                     # Test suite
 ├── data/                      # Actual gameplay data
 │   └── input/                 # Input data directory
-│       └── fray-cyclones-winter-01_2026-01-29.csv
+│       └── fray-cyclones-wt-01_2026-01-29.csv
 ├── environment.yml            # Conda environment
 ├── setup.py                   # Package configuration
 ├── stats.db                   # SQLite database file

@@ -7,6 +7,31 @@ from softball_statistics.parsers.filename_parser import (
 
 
 class TestFilenameParser:
+    @pytest.mark.parametrize(
+        "acronym, season_name",
+        [
+            ("wt", "Winter"),
+            ("lwt", "Late Winter"),
+            ("sp", "Spring"),
+            ("lsp", "Late Spring"),
+            ("su", "Summer"),
+            ("lsu", "Late Summer"),
+            ("fa", "Fall"),
+            ("lfa", "Late Fall"),
+        ],
+    )
+    def test_season_acronym(self, acronym, season_name):
+        """Test that season acronyms are expanded to their full names."""
+        result = parse_filename(f"fray-cyclones-{acronym}-01_2025-03-15.csv")
+
+        assert result["season"] == f"{season_name} 2025"
+
+    def test_season_acronym_is_case_insensitive(self):
+        """Test that uppercase season acronyms are expanded."""
+        result = parse_filename("fray-cyclones-LWT-01_2025-03-15.csv")
+
+        assert result["season"] == "Late Winter 2025"
+
     def test_valid_filename(self):
         """Test parsing a valid filename."""
         result = parse_filename("fray-cyclones-winter-01.csv")
