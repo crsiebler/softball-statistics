@@ -11,10 +11,10 @@ setup:  ## Create conda environment (idempotent)
 	conda env list | grep -q softball-stats || conda env create -f environment.yml
 
 install:  ## Install package in development mode (creates console script)
-	pip install -e .
+	python -m pip install -e ".[dev]"
 
 test:  ## Run all unit tests
-	pytest tests/ -v --cov=src --cov-report=html
+	pytest tests/ -v --cov=softball_statistics --cov-report=html
 
 run:  ## Run console script (requires install first)
 	softball-stats --file $(FILE) --output data/output/stats.xlsx --replace-existing --db data/output/stats.db
@@ -23,17 +23,17 @@ run-all:  ## Run console script to parse all CSV files and export
 	softball-stats --reparse-all --output data/output/stats.xlsx --db data/output/stats.db
 
 clean:  ## Clean up generated files
-	rm -rf dist/ build/ *.egg-info/
+	rm -rf dist/ build/ *.egg-info/ src/*.egg-info/
 	rm -rf .coverage htmlcov/ .pytest_cache/
 	find . -type d -name __pycache__ -exec rm -rf {} +
 
-format:  ## Format Python code with Black and isort
-	black src/ tests/ setup.py
-	isort src/ tests/ setup.py
+format:  ## Fix and format Python code with Ruff
+	ruff check --fix src/ tests/
+	ruff format src/ tests/
 
 check-format:  ## Check if Python code is properly formatted
-	black --check src/ tests/ setup.py
-	isort --check-only src/ tests/ setup.py
+	ruff check src/ tests/
+	ruff format --check src/ tests/
 
 lint:  ## Run all pre-commit checks (includes format and basic checks)
 	pre-commit run --all-files

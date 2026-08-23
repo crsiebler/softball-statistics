@@ -305,19 +305,19 @@ class CalculateStatsUseCase:
                         aggregated_players[player_name]["triples"] += stats.triples
                         aggregated_players[player_name]["home_runs"] += stats.home_runs
                         aggregated_players[player_name]["rbis"] += stats.rbis
-                        aggregated_players[player_name][
-                            "runs_scored"
-                        ] += stats.runs_scored
-                        aggregated_players[player_name][
-                            "plate_appearances"
-                        ] += stats.plate_appearances
+                        aggregated_players[player_name]["runs_scored"] += (
+                            stats.runs_scored
+                        )
+                        aggregated_players[player_name]["plate_appearances"] += (
+                            stats.plate_appearances
+                        )
                         aggregated_players[player_name]["walks"] += stats.walks
-                        aggregated_players[player_name][
-                            "sacrifice_flies"
-                        ] += stats.sacrifice_flies
-                        aggregated_players[player_name][
-                            "home_run_outs"
-                        ] += stats.home_run_outs
+                        aggregated_players[player_name]["sacrifice_flies"] += (
+                            stats.sacrifice_flies
+                        )
+                        aggregated_players[player_name]["home_run_outs"] += (
+                            stats.home_run_outs
+                        )
 
         # Recalculate derived stats after aggregation
         players_data = []
