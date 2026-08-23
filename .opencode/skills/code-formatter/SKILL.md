@@ -1,11 +1,11 @@
 ---
 name: code-formatter
-description: Applies Black and isort formatting, runs pre-commit hooks for code quality
+description: Applies Ruff lint fixes, import sorting, and formatting and runs pre-commit hooks for code quality
 ---
 
 ## What I do
-- Format Python code with Black formatter
-- Sort imports with isort
+- Format Python code with Ruff
+- Sort imports and remove unused imports with Ruff lint fixes
 - Run pre-commit hooks for quality checks
 - Validate code style compliance
 
@@ -14,13 +14,14 @@ Use this when formatting code, checking formatting, or running linting checks. T
 
 ## Procedure
 1. Activate conda environment: `conda activate softball-stats`
-2. Format code: `black src/ tests/ setup.py`
-3. Sort imports: `isort src/ tests/ setup.py`
-4. Run pre-commit checks: `pre-commit run --all-files`
-5. Fix any linting issues identified
+2. Apply lint fixes and sort imports: `ruff check --fix src/ tests/`
+3. Format code: `ruff format src/ tests/`
+4. Verify lint and formatting: `make check-format`
+5. Run pre-commit checks: `pre-commit run --all-files`
+6. Fix any remaining issues identified
 
 ## Related Guidelines
 - Follow code style guidelines from AGENTS.md
-- Use Black with 88 character line length
-- Apply isort with black profile
+- Use Ruff with the configured 88-character line length
+- Keep Ruff import sorting enabled through the `I` lint rules
 - Ensure mandatory pre-commit checks pass

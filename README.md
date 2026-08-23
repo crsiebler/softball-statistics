@@ -28,6 +28,10 @@ conda activate softball-stats
 make install
 ```
 
+Package metadata, runtime dependencies, and development dependencies are
+declared in `pyproject.toml`. The Conda environment installs the project with
+its `dev` extra in editable mode.
+
 ### Production Installation
 
 ```bash
@@ -100,7 +104,7 @@ softball-statistics/
 │   └── input/                 # Input data directory
 │       └── fray-cyclones-wt-01_2026-01-29.csv
 ├── environment.yml            # Conda environment
-├── setup.py                   # Package configuration
+├── pyproject.toml             # Package and dependency configuration
 ├── stats.db                   # SQLite database file
 ├── .gitignore                 # Git ignore rules
 └── Makefile                   # Automation scripts

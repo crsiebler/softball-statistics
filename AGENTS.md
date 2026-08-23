@@ -45,10 +45,10 @@
 ## Build/Lint/Test Commands
 - Test all: `make test` (pytest with coverage)
 - Test single: `pytest tests/test_file.py::TestClass::test_method -v`
-- Format: `make format` (Black + isort)
+- Format: `make format` (Ruff lint fixes, import sorting, and formatting)
 - Lint: `make lint` (pre-commit)
 
 ## Code Style Guidelines
-- Black (88 chars), isort (black profile)
+- Ruff formatting with an 88-character line length and Ruff import sorting
 - Type hints, dataclasses, docstrings
 - Snake_case naming, custom exceptions

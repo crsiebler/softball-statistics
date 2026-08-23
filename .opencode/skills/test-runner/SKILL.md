@@ -13,7 +13,7 @@ Use this when you need to execute tests, check coverage, or troubleshoot test fa
 
 ## Procedure
 1. Activate conda environment: `conda activate softball-stats`
-2. Run tests with coverage: `pytest tests/ -v --cov=src --cov-report=html`
+2. Run tests with coverage: `pytest tests/ -v --cov=softball_statistics --cov-report=html`
 3. Analyze coverage report in htmlcov/ directory
 4. Debug failures by examining error messages and test fixtures
 5. Fix implementation issues identified by tests
