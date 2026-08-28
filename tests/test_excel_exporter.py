@@ -11,11 +11,46 @@ from softball_statistics.exporters.excel_exporter import (
     _get_seasons_for_team,
     export_to_excel,
 )
-from softball_statistics.models import Game, League, Team, Week
+from softball_statistics.models import (
+    Game,
+    League,
+    PlateAppearance,
+    Player,
+    Team,
+    Week,
+)
 from softball_statistics.repository.sqlite import SQLiteRepository
 
 
 class TestExcelExporter:
+    def test_player_summary_obp_includes_walks(self, tmp_path):
+        repo = SQLiteRepository(str(tmp_path / "test.db"))
+        league_id = repo.save_league(League(None, "Fray", "Summer 2026"))
+        team_id = repo.save_team(Team(None, league_id, "Cyclones"))
+        player_id = repo.save_player(Player(None, team_id, "Player One"))
+        week_id = repo.save_week(
+            Week(None, league_id, 1, date(2026, 8, 1), date(2026, 8, 7))
+        )
+        game_id = repo.save_game(Game(None, week_id, team_id, date(2026, 8, 1), 1))
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "1B", bases=1)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "BB", bases=0)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "F4", bases=0, rbis=1)
+        )
+        output_path = tmp_path / "stats.xlsx"
+
+        export_to_excel({}, str(output_path), query_repo=repo)
+
+        sheet = load_workbook(output_path)["Player Summary"]
+        headers = [cell.value for cell in sheet[1]]
+        player = dict(zip(headers, [cell.value for cell in sheet[2]]))
+        assert player["BA"] == "1.000"
+        assert player["OBP"] == "0.667"
+
     def test_get_seasons_for_team_sorts_by_first_game_date(self, tmp_path):
         """Season tabs should follow each season's first game date."""
         repo = SQLiteRepository(str(tmp_path / "test.db"))

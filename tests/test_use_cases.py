@@ -92,6 +92,53 @@ Player2,HR,F4+
 
 
 class TestCalculateStatsUseCase:
+    def test_obp_uses_walks_in_cumulative_and_game_stats(self, tmp_path):
+        repo = SQLiteRepository(str(tmp_path / "test.db"))
+        team_id, game_id, player_id = self._save_game_with_player(repo)
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "1B", bases=1)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "BB", bases=0)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "K", bases=0)
+        )
+
+        use_case = CalculateStatsUseCase(repo)
+
+        cumulative_player = use_case.get_cumulative_team_stats("Cyclones")["players"][0]
+        game_stats = use_case.get_team_games_stats(team_id)[0]
+        game_player = use_case.get_game_player_stats(game_id)[0]
+
+        assert cumulative_player["batting_average"] == 0.5
+        assert cumulative_player["on_base_percentage"] == 0.667
+        assert game_stats["on_base_percentage"] == 0.667
+        assert game_player["on_base_percentage"] == 0.667
+
+    def test_lowercase_sacrifice_fly_is_excluded_from_at_bats(self, tmp_path):
+        repo = SQLiteRepository(str(tmp_path / "test.db"))
+        team_id, game_id, player_id = self._save_game_with_player(repo)
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "1B", bases=1)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "f4", bases=0, rbis=1)
+        )
+
+        use_case = CalculateStatsUseCase(repo)
+        repository_stats = repo.get_player_stats(player_id)
+        game_stats = use_case.get_team_games_stats(team_id)[0]
+        game_player = use_case.get_game_player_stats(game_id)[0]
+
+        assert repository_stats is not None
+        assert repository_stats.sacrifice_flies == 1
+        assert repository_stats.at_bats == 1
+        assert game_stats["sacrifice_flies"] == 1
+        assert game_stats["at_bats"] == 1
+        assert game_player["sacrifice_flies"] == 1
+        assert game_player["at_bats"] == 1
+
     def test_league_summary_combines_same_league_team_across_seasons(self, tmp_path):
         """Same league/team in multiple seasons should produce one summary row."""
         repo = SQLiteRepository(str(tmp_path / "test.db"))
@@ -142,3 +189,13 @@ class TestCalculateStatsUseCase:
         repo.save_plate_appearance(
             PlateAppearance(None, player_id, game_id, "1B", bases=1)
         )
+
+    def _save_game_with_player(self, repo: SQLiteRepository) -> tuple[int, int, int]:
+        league_id = repo.save_league(League(None, "Fray", "Summer 2026"))
+        team_id = repo.save_team(Team(None, league_id, "Cyclones"))
+        player_id = repo.save_player(Player(None, team_id, "Player One"))
+        week_id = repo.save_week(
+            Week(None, league_id, 1, date(2026, 8, 1), date(2026, 8, 7))
+        )
+        game_id = repo.save_game(Game(None, week_id, team_id, date(2026, 8, 1), 1))
+        return team_id, game_id, player_id
