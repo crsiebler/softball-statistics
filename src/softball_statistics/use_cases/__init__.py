@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from softball_statistics.calculators.stats_calculator import (
     calculate_batting_average,
+    calculate_obp,
     calculate_ops,
     calculate_slg,
 )
@@ -328,16 +329,16 @@ class CalculateStatsUseCase:
             doubles = player["doubles"]
             triples = player["triples"]
             hr = player["home_runs"]
-            player["walks"]
-            player["sacrifice_flies"]
-            player["plate_appearances"]
+            walks = player["walks"]
+            sacrifice_flies = player["sacrifice_flies"]
 
             # Recalculate averages
             player["batting_average"] = (
                 calculate_batting_average(hits, ab) if ab > 0 else 0.0
             )
-            # Simplified OBP (BA approximation, as before)
-            player["on_base_percentage"] = player["batting_average"]
+            player["on_base_percentage"] = calculate_obp(
+                hits, walks, 0, ab, sacrifice_flies
+            )
             player["slugging_percentage"] = (
                 calculate_slg(singles, doubles, triples, hr, ab) if ab > 0 else 0.0
             )
@@ -427,7 +428,7 @@ class CalculateStatsUseCase:
                         triples += 1
                     elif bases == 4:
                         home_runs += 1
-                elif attempt_rbis > 0 and outcome.startswith("F"):
+                elif attempt_rbis > 0 and outcome_lower.startswith("f"):
                     sacrifice_flies += 1
 
             at_bats = total_attempts - walks - sacrifice_flies
@@ -455,16 +456,16 @@ class CalculateStatsUseCase:
                 "batting_average": calculate_batting_average(hits, at_bats)
                 if at_bats > 0
                 else 0.0,
-                "on_base_percentage": calculate_batting_average(hits, at_bats)
-                if at_bats > 0
-                else 0.0,  # Simplified
+                "on_base_percentage": calculate_obp(
+                    hits, walks, 0, at_bats, sacrifice_flies
+                ),
                 "slugging_percentage": calculate_slg(
                     singles, doubles, triples, home_runs, at_bats
                 )
                 if at_bats > 0
                 else 0.0,
                 "ops": calculate_ops(
-                    calculate_batting_average(hits, at_bats) if at_bats > 0 else 0.0,
+                    calculate_obp(hits, walks, 0, at_bats, sacrifice_flies),
                     calculate_slg(singles, doubles, triples, home_runs, at_bats)
                     if at_bats > 0
                     else 0.0,
@@ -538,7 +539,7 @@ class CalculateStatsUseCase:
                     player["triples"] += 1
                 elif bases == 4:
                     player["home_runs"] += 1
-            elif rbis > 0 and outcome.startswith("F"):
+            elif rbis > 0 and outcome_lower.startswith("f"):
                 player["sacrifice_flies"] += 1
 
         # Calculate derived stats for each player
@@ -559,8 +560,7 @@ class CalculateStatsUseCase:
             player["batting_average"] = (
                 calculate_batting_average(hits, ab) if ab > 0 else 0.0
             )
-            # Simplified OBP (BA approximation)
-            player["on_base_percentage"] = player["batting_average"]
+            player["on_base_percentage"] = calculate_obp(hits, walks, 0, ab, sf)
             player["slugging_percentage"] = (
                 calculate_slg(singles, doubles, triples, hr, ab) if ab > 0 else 0.0
             )

@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 
 from softball_statistics.calculators.stats_calculator import (
     calculate_batting_average,
+    calculate_obp,
     calculate_ops,
     calculate_slg,
 )
@@ -544,13 +545,14 @@ def _create_player_summary_sheet(
             doubles = player["2B"]
             triples = player["3B"]
             hr = player["HR"]
+            walks = player["BB"]
+            sacrifice_flies = player["SF"]
 
             # Recalculate averages
             player["BA"] = (
                 f"{calculate_batting_average(hits, ab):.3f}" if ab > 0 else "0.000"
             )
-            # Simplified OBP (BA approximation)
-            player["OBP"] = player["BA"]
+            player["OBP"] = f"{calculate_obp(hits, walks, 0, ab, sacrifice_flies):.3f}"
             player["SLG"] = (
                 f"{calculate_slg(singles, doubles, triples, hr, ab):.3f}"
                 if ab > 0

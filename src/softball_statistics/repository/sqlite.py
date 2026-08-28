@@ -776,7 +776,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                         triples += 1
                     elif bases == 4:
                         home_runs += 1
-                elif attempt_rbis > 0 and outcome.startswith("F"):
+                elif attempt_rbis > 0 and outcome_lower.startswith("f"):
                     # Sacrifice Fly: fly ball out with RBIs
                     sacrifice_flies += 1
 
