@@ -407,6 +407,7 @@ class CalculateStatsUseCase:
             rbis = 0
             runs_scored = 0
             sacrifice_flies = 0
+            hit_pitcher_outs = 0
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
@@ -418,6 +419,8 @@ class CalculateStatsUseCase:
                     walks += 1
                 elif outcome_lower == "hro":
                     home_run_outs += 1
+                elif outcome_lower == "hpo":
+                    hit_pitcher_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -431,7 +434,7 @@ class CalculateStatsUseCase:
                 elif attempt_rbis > 0 and outcome_lower.startswith("f"):
                     sacrifice_flies += 1
 
-            at_bats = total_attempts - walks - sacrifice_flies
+            at_bats = total_attempts - walks - sacrifice_flies - hit_pitcher_outs
 
             # Calculate team stats for the game
             game_stats = {
@@ -514,6 +517,7 @@ class CalculateStatsUseCase:
                     "home_runs": 0,
                     "walks": 0,
                     "sacrifice_flies": 0,
+                    "hit_pitcher_outs": 0,
                     "home_run_outs": 0,
                     "rbis": 0,
                     "runs_scored": 0,
@@ -529,6 +533,8 @@ class CalculateStatsUseCase:
                 player["walks"] += 1
             elif outcome_lower == "hro":
                 player["home_run_outs"] += 1
+            elif outcome_lower == "hpo":
+                player["hit_pitcher_outs"] += 1
             elif bases > 0:
                 player["hits"] += 1
                 if bases == 1:
@@ -548,7 +554,8 @@ class CalculateStatsUseCase:
             pa = player["plate_appearances"]
             walks = player["walks"]
             sf = player["sacrifice_flies"]
-            ab = pa - walks - sf
+            hpo = player["hit_pitcher_outs"]
+            ab = pa - walks - sf - hpo
             player["at_bats"] = ab
             hits = player["hits"]
             singles = player["singles"]
