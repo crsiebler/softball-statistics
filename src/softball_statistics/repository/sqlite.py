@@ -306,6 +306,7 @@ class SQLiteQueryRepository(QueryRepository):
             rbis = 0
             runs_scored = 0
             sacrifices = 0
+            hit_pitcher_outs = 0
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
@@ -319,6 +320,8 @@ class SQLiteQueryRepository(QueryRepository):
                     strikeouts += 1
                 elif outcome_lower == "hro":
                     home_run_outs += 1
+                elif outcome_lower == "hpo":
+                    hit_pitcher_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -333,8 +336,8 @@ class SQLiteQueryRepository(QueryRepository):
                     # Sacrifice: out with RBIs
                     sacrifices += 1
 
-            # At-bats = total attempts - walks - sacrifices
-            at_bats = total_attempts - walks - sacrifices
+            # At-bats exclude walks, sacrifices, and hit pitcher outs.
+            at_bats = total_attempts - walks - sacrifices - hit_pitcher_outs
 
             # Calculate advanced stats
             stats_dict = calculate_batting_stats(
@@ -753,6 +756,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             rbis = 0
             runs_scored = 0
             sacrifice_flies = 0
+            hit_pitcher_outs = 0
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
@@ -766,6 +770,8 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                     strikeouts += 1
                 elif outcome_lower == "hro":
                     home_run_outs += 1
+                elif outcome_lower == "hpo":
+                    hit_pitcher_outs += 1
                 elif bases > 0:
                     hits += 1
                     if bases == 1:
@@ -780,8 +786,8 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
                     # Sacrifice Fly: fly ball out with RBIs
                     sacrifice_flies += 1
 
-            # At-bats = total attempts - walks - sacrifice_flies
-            at_bats = total_attempts - walks - sacrifice_flies
+            # At-bats exclude walks, sacrifice flies, and hit pitcher outs.
+            at_bats = total_attempts - walks - sacrifice_flies - hit_pitcher_outs
 
             # Calculate advanced stats
             stats_dict = calculate_batting_stats(

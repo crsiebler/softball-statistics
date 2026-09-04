@@ -410,7 +410,7 @@ def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
         {
             "Abbreviation": "AB",
             "Full Name": "At Bats",
-            "Formula": "Total attempts - BB - SF",
+            "Formula": "Total attempts - BB - SF - HPO",
         },
         {"Abbreviation": "H", "Full Name": "Hits", "Formula": "Total bases gained > 0"},
         {"Abbreviation": "1B", "Full Name": "Singles", "Formula": "Hits with 1 base"},
@@ -430,6 +430,11 @@ def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
             "Abbreviation": "SF",
             "Full Name": "Sacrifice Flies",
             "Formula": "Fly ball outcomes with RBI",
+        },
+        {
+            "Abbreviation": "HPO",
+            "Full Name": "Hit Pitcher Outs",
+            "Formula": "Outcomes recorded as 'HPO'; excluded from AB",
         },
         {
             "Abbreviation": "HRO",

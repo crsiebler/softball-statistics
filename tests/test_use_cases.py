@@ -139,6 +139,32 @@ class TestCalculateStatsUseCase:
         assert game_player["sacrifice_flies"] == 1
         assert game_player["at_bats"] == 1
 
+    def test_hpo_is_excluded_from_at_bats_and_batting_average(self, tmp_path):
+        repo = SQLiteRepository(str(tmp_path / "test.db"))
+        team_id, game_id, player_id = self._save_game_with_player(repo)
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "1B", bases=1)
+        )
+        repo.save_plate_appearance(
+            PlateAppearance(None, player_id, game_id, "HPO", bases=0)
+        )
+
+        use_case = CalculateStatsUseCase(repo)
+        repository_stats = repo.get_player_stats(player_id)
+        cumulative_stats = use_case.get_cumulative_team_stats("Cyclones")["players"][0]
+        game_stats = use_case.get_team_games_stats(team_id)[0]
+        game_player = use_case.get_game_player_stats(game_id)[0]
+
+        assert repository_stats is not None
+        assert repository_stats.at_bats == 1
+        assert repository_stats.batting_average == 1.0
+        assert cumulative_stats["at_bats"] == 1
+        assert cumulative_stats["batting_average"] == 1.0
+        assert game_stats["at_bats"] == 1
+        assert game_stats["batting_average"] == 1.0
+        assert game_player["at_bats"] == 1
+        assert game_player["batting_average"] == 1.0
+
     def test_league_summary_combines_same_league_team_across_seasons(self, tmp_path):
         """Same league/team in multiple seasons should produce one summary row."""
         repo = SQLiteRepository(str(tmp_path / "test.db"))
