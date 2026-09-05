@@ -405,7 +405,7 @@ def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
         {
             "Abbreviation": "PA",
             "Full Name": "Plate Appearances",
-            "Formula": "AB + BB + SF",
+            "Formula": "AB + BB + SF + HPO",
         },
         {
             "Abbreviation": "AB",

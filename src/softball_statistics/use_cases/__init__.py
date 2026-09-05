@@ -11,6 +11,7 @@ from softball_statistics.calculators.stats_calculator import (
     calculate_obp,
     calculate_ops,
     calculate_slg,
+    normalize_outcome,
 )
 from softball_statistics.interfaces import CommandRepository, Parser, QueryRepository
 from softball_statistics.models import League, Team
@@ -411,7 +412,7 @@ class CalculateStatsUseCase:
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
-                outcome_lower = outcome.lower()
+                outcome_lower = normalize_outcome(outcome)
                 rbis += attempt_rbis
                 runs_scored += attempt_runs
 
@@ -528,7 +529,7 @@ class CalculateStatsUseCase:
             player["rbis"] += rbis
             player["runs_scored"] += runs_scored
 
-            outcome_lower = outcome.lower()
+            outcome_lower = normalize_outcome(outcome)
             if outcome_lower.startswith("bb"):
                 player["walks"] += 1
             elif outcome_lower == "hro":

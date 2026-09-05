@@ -5,6 +5,11 @@ Pure functions for calculating baseball/softball statistics.
 from typing import Dict
 
 
+def normalize_outcome(outcome: str) -> str:
+    """Return an outcome without whitespace or scoring modifiers."""
+    return "".join(outcome.lower().split()).replace("*", "").replace("+", "")
+
+
 def calculate_batting_average(hits: int, at_bats: int) -> float:
     """
     Calculate batting average: H / AB

@@ -6,7 +6,10 @@ import sqlite3
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from softball_statistics.calculators.stats_calculator import calculate_batting_stats
+from softball_statistics.calculators.stats_calculator import (
+    calculate_batting_stats,
+    normalize_outcome,
+)
 from softball_statistics.interfaces import CommandRepository, QueryRepository
 from softball_statistics.models import (
     Game,
@@ -310,7 +313,7 @@ class SQLiteQueryRepository(QueryRepository):
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
-                outcome_lower = outcome.lower()
+                outcome_lower = normalize_outcome(outcome)
                 rbis += attempt_rbis
                 runs_scored += attempt_runs
 
@@ -760,7 +763,7 @@ class SQLiteRepository(SQLiteCommandRepository, SQLiteQueryRepository):
             home_run_outs = 0
 
             for outcome, bases, attempt_rbis, attempt_runs in attempts:
-                outcome_lower = outcome.lower()
+                outcome_lower = normalize_outcome(outcome)
                 rbis += attempt_rbis
                 runs_scored += attempt_runs
 
