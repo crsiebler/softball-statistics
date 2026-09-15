@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from copy import copy
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +79,9 @@ def _write_snapshot(snapshot: dict[str, Any], path: Path) -> None:
         summary = writer.sheets["League Summary"]
         summary.cell(1, 9, "Through Date")
         summary.cell(1, 10, "Workbook Season")
+        header_border = copy(summary["H1"].border)
+        summary["I1"].border = header_border
+        summary["J1"].border = header_border
         for row in range(2, summary.max_row + 1):
             summary.cell(row, 9, snapshot["as_of"])
             summary.cell(row, 10, snapshot["season"])
