@@ -7,7 +7,7 @@ A comprehensive Python application to process softball game results and calculat
 - Process CSV files with structured naming: `<league>-<team>-<season>-<game>[_<YYYY-MM-DD>].csv`
 - Calculate comprehensive batting statistics (BA, OBP, SLG, OPS, etc.)
 - Multi-league and multi-team support
-- Excel export with formatted reports
+- Separate formatted Excel workbooks for each league and season, with historical summaries
 - SQLite database for data persistence (stats.db)
 - Duplicate upload prevention with user confirmation
 
@@ -50,6 +50,42 @@ softball-stats --list-leagues
 # List teams in a league
 softball-stats --list-teams --league "fray"
 ```
+
+### League and season workbooks
+
+`--output` supplies the directory and filename prefix. For example,
+`--output data/output/stats.xlsx` generates files such as:
+
+```text
+data/output/stats-fray-winter_2026.xlsx
+data/output/stats-fray-spring_2026.xlsx
+data/output/stats-fray-late_summer_2026.xlsx
+data/output/stats-scottsdale-fall_2026.xlsx
+```
+
+All games remain in the same SQLite database. Each workbook contains:
+
+- **Legend**: statistic definitions.
+- **League Summary**: cumulative team statistics for that league through the
+  season's latest recorded game date, shown in the **Through Date** column.
+- **Player Summary**: cumulative player statistics for that league through the
+  same date, combining matching player names across teams/seasons.
+- **Team Total** tabs: cumulative statistics for each team playing that season.
+- **Season Total** tabs: statistics from that season only.
+- **Game** tabs: one tab per team/game from that season, ordered by date and
+  game number, including separate tabs for doubleheaders.
+
+For example, a Spring workbook includes earlier Winter games in cumulative
+summaries, but does not include later Summer games or another league's games.
+Cutoffs use actual game dates rather than season labels or import order. If
+seasons overlap, only games on or before the cutoff contribute to summaries.
+An active season's cutoff advances as new games are recorded.
+
+Each export refreshes all league/season workbooks in the database, so backfilled
+games are reflected in later cumulative summaries. Existing consolidated
+`stats.xlsx` files are not deleted or refreshed. Seasons without games produce
+no workbook. Filenames are sanitized; colliding league/season names receive an
+ID suffix. Worksheet names are shortened and disambiguated when necessary.
 
 ## Development
 
