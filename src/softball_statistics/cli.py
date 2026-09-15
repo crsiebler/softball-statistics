@@ -71,7 +71,10 @@ Examples:
             "--output",
             type=str,
             default="data/output/stats.xlsx",
-            help="Output Excel file path (default: data/output/stats.xlsx)",
+            help=(
+                "Excel filename prefix; creates one file per league/season "
+                "(default: data/output/stats.xlsx produces stats-fray-winter_2026.xlsx)"
+            ),
         )
 
         parser.add_argument(
@@ -211,14 +214,18 @@ Examples:
             # Export stats if output path provided
             if hasattr(args, "output") and args.output:
                 # Export all teams' stats
-                self.exporter.export(
-                    {},
-                    args.output,
-                    None,
-                    None,
-                    self.calculate_stats_use_case,
-                )
-                print(f"Success! Statistics exported to {args.output}")
+                self._export_stats({}, args.output)
+
+    def _export_stats(self, stats_data: dict, output_path: str) -> None:
+        """Refresh historical season snapshots and report their actual paths."""
+        paths = self.exporter.export(
+            stats_data, output_path, use_case=self.calculate_stats_use_case
+        )
+        if not paths:
+            print("No games available to export.")
+            return
+        for path in paths:
+            print(f"Success! Statistics exported to {path}")
 
     def _process_file(
         self, file_path: str, output_path: str, replace_existing: bool
@@ -239,14 +246,7 @@ Examples:
 
             # Export to Excel
             print(f"Exporting to {output_path}...")
-            self.exporter.export(
-                stats_data,
-                output_path,
-                metadata["team"],
-                metadata["season"],
-                self.calculate_stats_use_case,
-            )
-            print(f"Success! Statistics exported to {output_path}")
+            self._export_stats(stats_data, output_path)
 
             # Display parsing warnings if any
             warnings = parsed_data.get("warnings", [])
@@ -297,14 +297,7 @@ Examples:
                             metadata["league"], metadata["team"], metadata["season"]
                         )
                         print(f"Exporting to {output_path}...")
-                        self.exporter.export(
-                            stats_data,
-                            output_path,
-                            team_name=metadata["team"],
-                            season=metadata["season"],
-                            use_case=self.calculate_stats_use_case,
-                        )
-                        print(f"Success! Statistics exported to {output_path}")
+                        self._export_stats(stats_data, output_path)
                     else:
                         print("Operation cancelled.")
                 else:

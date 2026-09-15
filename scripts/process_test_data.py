@@ -67,8 +67,9 @@ def main():
         stats_data = {"team_stats": team_stats}
 
         # Export to Excel
-        exporter.export(stats_data, output_path, use_case=calculator)
-        print(f"✓ Export completed: {output_path}")
+        output_paths = exporter.export(stats_data, output_path, use_case=calculator)
+        for generated_path in output_paths:
+            print(f"✓ Export completed: {generated_path}")
 
     except Exception as e:
         print(f"✗ Error during export: {e}")

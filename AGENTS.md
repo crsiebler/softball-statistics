@@ -26,7 +26,9 @@
   - Generic examples: Debug failing test → Analyze error → Fix implementation → Re-run
 
 ## Technical Constraints - Boundaries
-- **Never Touch**: `data/` folder (only Python app writes to `data/output`)
+- **Generated Output**: `data/output/` contains only application-generated SQLite databases and Excel spreadsheets. Only the Python application writes these outputs; do not hand-edit them or place source/review files there.
+- **Game Inputs**: `data/input/` contains only CSV game logs with player statistics. The `transcribe-score-sheets` skill may generate confirmed, parser-validated CSV logs there. Keep photographs, review notes, and other work-in-progress artifacts out of this directory.
+- **Game-Log Workspace**: `data/game-log/` is the work-in-progress area for source photographs, transcription drafts, and game-specific review notes. Existing files may be modified only if they were created within the current working session. Preserve files from earlier sessions; create a uniquely named new artifact instead of overwriting, renaming, or deleting them.
 - **Preferred Tools**: conda, pytest
 - **Environment Activation**: Always activate conda environment with `conda activate softball-stats` before testing or running the application
 - **Mandatory Pre-commit**: `make lint && make test`

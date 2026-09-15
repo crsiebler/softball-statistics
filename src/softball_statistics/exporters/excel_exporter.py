@@ -41,9 +41,24 @@ class ExcelExporter:
         team_name: Optional[str] = None,
         season: Optional[str] = None,
         use_case=None,
-    ) -> None:
-        """Export data to Excel."""
-        export_to_excel(data, output_path, self.query_repo, team_name, season, use_case)
+    ) -> list[str]:
+        """Refresh one workbook per league/season and return their actual paths.
+
+        Team/season arguments remain accepted for existing callers. All seasons
+        are refreshed so a backfilled game also updates later snapshots.
+        """
+        from softball_statistics.exporters.season_workbooks import (
+            export_season_workbooks,
+        )
+        from softball_statistics.use_cases import CalculateStatsUseCase
+
+        return export_season_workbooks(
+            self.query_repo,
+            use_case
+            if use_case is not None
+            else CalculateStatsUseCase(self.query_repo),
+            output_path,
+        )
 
 
 def _abbreviate_team_name(team_name: str) -> str:
@@ -569,6 +584,13 @@ def _create_player_summary_sheet(
 
             player_data.append(player)
 
+    _write_player_summary_sheet(player_data, writer)
+
+
+def _write_player_summary_sheet(
+    player_data: list[Dict[str, Any]], writer: pd.ExcelWriter
+) -> None:
+    """Render prepared player rows without querying unbounded database totals."""
     if player_data:
         df = pd.DataFrame(player_data)
         # Sort alphabetically by player name (case-insensitive)
@@ -726,7 +748,10 @@ def _get_league_for_team(
 
 
 def _create_cumulative_team_sheet(
-    team_name: str, cumulative_stats: Dict[str, Any], writer: pd.ExcelWriter
+    team_name: str,
+    cumulative_stats: Dict[str, Any],
+    writer: pd.ExcelWriter,
+    sheet_name: Optional[str] = None,
 ) -> None:
     """Create cumulative team sheet across all seasons."""
     player_data = []
@@ -761,7 +786,7 @@ def _create_cumulative_team_sheet(
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{_abbreviate_team_name(team_name)} Total"
+        sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} Total"
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format the sheet
@@ -826,7 +851,11 @@ def _create_cumulative_team_sheet(
 
 
 def _create_season_total_sheet(
-    team_name: str, season: str, season_stats: Dict[str, Any], writer: pd.ExcelWriter
+    team_name: str,
+    season: str,
+    season_stats: Dict[str, Any],
+    writer: pd.ExcelWriter,
+    sheet_name: Optional[str] = None,
 ) -> None:
     """Create season total sheet."""
     team_stats = season_stats.get("team_stats", {}).get(team_name, {})
@@ -861,7 +890,7 @@ def _create_season_total_sheet(
         df = pd.DataFrame(player_data)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{_abbreviate_team_name(team_name)} {season} Total"
+        sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} {season} Total"
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format
@@ -933,6 +962,7 @@ def _create_per_game_sheet(
     game_stat: Dict[str, Any],
     player_stats: list[Dict[str, Any]],
     writer: pd.ExcelWriter,
+    sheet_name: Optional[str] = None,
 ) -> None:
     """Create per-game sheet with player-by-player stats."""
     player_data = []
@@ -966,7 +996,10 @@ def _create_per_game_sheet(
         df = pd.DataFrame(player_data)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = f"{_abbreviate_team_name(team_name)} {game_stat.get('season', 'Unknown')} Game {game_stat.get('game_number', 0)}"
+        sheet_name = (
+            sheet_name
+            or f"{_abbreviate_team_name(team_name)} {game_stat.get('season', 'Unknown')} Game {game_stat.get('game_number', 0)}"
+        )
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         # Format

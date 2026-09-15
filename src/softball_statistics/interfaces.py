@@ -4,7 +4,7 @@ Interfaces for dependency injection.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 from softball_statistics.models import League, Team
 
@@ -18,7 +18,14 @@ class Parser(Protocol):
 class Exporter(Protocol):
     """Protocol for data exporters."""
 
-    def export(self, data: Dict[str, Any], output_path: str, **kwargs) -> None: ...
+    def export(
+        self,
+        data: Dict[str, Any],
+        output_path: str,
+        team_name: Optional[str] = None,
+        season: Optional[str] = None,
+        use_case: Any = None,
+    ) -> list[str]: ...
 
 
 class Calculator(Protocol):
