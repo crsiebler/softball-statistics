@@ -71,7 +71,10 @@ def test_separate_workbooks_and_historical_totals(season_repo, tmp_path):
         workbook = load_workbook(tmp_path / f"stats-fray-{season}_2026.xlsx")
         try:
             summary = sheet_records(workbook, "League Summary")
+            summary_sheet = workbook["League Summary"]
             assert len(summary) == 1
+            assert summary_sheet["I1"].border.bottom.style == "thin"
+            assert summary_sheet["J1"].border.bottom.style == "thin"
             assert summary[0]["League"] == "Fray"
             assert summary[0]["Games Played"] == games
             assert summary[0]["Team BA"] == ba
