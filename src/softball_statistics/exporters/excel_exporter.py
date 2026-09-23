@@ -144,7 +144,7 @@ def export_to_excel(
                         team_id = _get_team_id(team_name, season_name, query_repo)
                         if team_id:
                             games_stats = use_case.get_team_games_stats(team_id)
-                            for game_stat in games_stats:
+                            for game_stat in reversed(games_stats):
                                 player_stats = use_case.get_game_player_stats(
                                     game_stat["game_id"]
                                 )
@@ -184,7 +184,7 @@ def export_to_excel(
                                 )
                                 if team_id:
                                     games_stats = use_case.get_team_games_stats(team_id)
-                                    for game_stat in games_stats:
+                                    for game_stat in reversed(games_stats):
                                         player_stats = use_case.get_game_player_stats(
                                             game_stat["game_id"]
                                         )

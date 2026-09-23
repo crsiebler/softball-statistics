@@ -109,8 +109,8 @@ def _write_snapshot(snapshot: dict[str, Any], path: Path) -> None:
                 ),
             )
 
-        # Chronological game tabs across all teams, with doubleheaders in order.
-        for game in snapshot["games"]:
+        # Show the most recent game first, preserving doubleheader order in reverse.
+        for game in reversed(snapshot["games"]):
             label = (
                 f"{_abbreviate_team_name(game['team_name'])} "
                 f"{snapshot['season']} Game {game['game_number']}"

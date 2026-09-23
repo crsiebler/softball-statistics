@@ -92,8 +92,8 @@ def test_separate_workbooks_and_historical_totals(season_repo, tmp_path):
             assert all(season.title() in name for name in game_tabs)
             if season == "spring":
                 assert game_tabs == [
-                    "Cyclo Spring 2026 Game 1",
                     "Cyclo Spring 2026 Game 2",
+                    "Cyclo Spring 2026 Game 1",
                 ]
                 totals = sheet_records(workbook, "Cyclo Spring 2026 Total")[0]
                 assert (totals["PA"], totals["H"]) == (3, 1)
@@ -160,7 +160,7 @@ def test_colliding_team_abbreviations_and_long_seasons_keep_every_sheet(tmp_path
         players = [
             sheet_records(workbook, name)[0] for name in workbook.sheetnames[-2:]
         ]
-        assert [(p["1B"], p["2B"]) for p in players] == [(1, 0), (0, 1)]
+        assert [(p["1B"], p["2B"]) for p in players] == [(0, 1), (1, 0)]
     finally:
         workbook.close()
 
