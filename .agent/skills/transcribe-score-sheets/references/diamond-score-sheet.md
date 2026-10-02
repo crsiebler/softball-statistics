@@ -1,80 +1,9 @@
----
-name: transcribe-score-sheets
-description: Transcribes photographed softball score sheets into input CSV logs; use for score-sheet OCR, Scottsdale Don't Cha Know games, inning reconstruction, and RBI/run reconciliation.
----
+# Diamond Score Sheet
 
-# Transcribe Score Sheets
-
-## Goal
-
-Produce evidence-backed input CSVs from supplied game-log photographs. Resolve
-scoring ambiguities with the user before finalizing affected appearances.
-Preserve batting order, reaching results, RBI credits, and scored runs.
-
-Follow AGENTS.md and runtime permissions. Read explicitly supplied photographs;
-do not browse unrelated game data. Use `data/game-log/` for transcription drafts
-and game-specific review notes. Generate confirmed, parser-validated player
-statistics CSVs in `data/input/`; that directory contains only CSV game logs.
-Reserve `data/output/` for application-generated SQLite databases and Excel
-spreadsheets. Do not import games or run database operations.
-In plan mode, provide a draft and questions only. Do not install OCR software or
-upload photographs externally without authorization.
-
-Track which `data/game-log/` files were created in this working session. Modify
-only those files; never overwrite, rename, or delete files from earlier sessions.
-For an existing review path, create a uniquely named revision instead. Check
-destination paths before writing and preserve existing input CSVs unless their
-replacement is explicitly authorized.
-
-Save each review Markdown in `data/game-log/` alongside its source photograph,
-not in `data/input/` or a separate transcription directory. Name it after its
-game CSV:
-`data/game-log/<league>-<team>-<season>-<game>_<YYYY-MM-DD>-review.md`.
-Keep separate reviews for doubleheader games. Use a unique revision suffix if
-that review already exists from an earlier session; leave source photos intact.
-
-## Establish the input contract
-
-Inspect these sources before serializing; application changes may affect tokens:
-
-- `src/softball_statistics/parsers/filename_parser.py`
-- `src/softball_statistics/parsers/csv_parser.py`
-- `src/softball_statistics/parsers/attempt_parser.py`
-- `src/softball_statistics/use_cases/__init__.py`
-
-Current format:
-
-```text
-<league>-<team>-<season>-<game>_<YYYY-MM-DD>.csv
-Player Name,Attempt,Attempt,Attempt
-```
-
-- Use a numeric game number and a real calendar date. For example,
-  `scottsdale-dont_cha_know-fa-02_2026-09-14.csv`.
-- League/team underscores become spaces and names are title-cased; `fa` becomes
-  Fall with the date's year appended. Preserve the approved team slug.
-- UTF-8 CSV, one row per player in photographed lineup order. Use confirmed
-  spelling, distinguishing similar names such as Jack and Jakob.
-- Pack each player's actual appearances chronologically. Attempt columns are
-  appearances, not innings. Use only trailing padding for unused CSV cells.
-- Hits: `1B`, `2B`, `3B`, `HR`; walk: `BB`; strikeout: `K`.
-- Preserve exact supported out notation, such as `1-3`, `F4`, `F8`, or `6-3`.
-  Generic `O` is a last resort after the focused notation pass below and user
-  approval. Blanket fallback approval does not make partially read plays `O`.
-- Append `*` per RBI and `+` if that batter scored: `1B*`, `2B+`, `3B**+`.
-- There is no literal `SF` token. A confirmed sacrifice fly can be `F8*`;
-  downstream statistics use fly-out notation with RBI to identify sacrifices.
-- A confirmed fielder's choice may use the approved fielding sequence, such as
-  `5-4`. Preserve who reached and who was retired in the ledger. This parser
-  groups the result as an out/non-hit; that does not establish the batter was
-  the runner retired. Do not infer every `5-4` is a fielder's choice without
-  context. Keep the retired runner's earlier single or walk unchanged.
-- Do not invent mappings for unsupported results. The parser is permissive;
-  acceptance alone is not proof of correct scoring semantics.
-- Home-run parsing can assume missing RBI/run modifiers. Resolve them from
-  evidence rather than accepting automatic assumptions as scoring evidence.
-
-## Read in independent passes
+Use for formal sheets with inning columns and infield diamonds, including
+Scottsdale Don't Cha Know sheets. These conventions do not apply to the
+co-ed roster board. Follow the shared contract and delivery rules in
+[SKILL.md](../SKILL.md).
 
 ### 1. Inventory and layout
 
@@ -170,44 +99,6 @@ to the correct players. Never invent an RBI, run, hit, or out to force balance.
 Legitimate runs without RBI are possible: obtain confirmation and document
 them. The current importer rejects unequal game RBI/run totals, so report a
 confirmed exception as an import blocker rather than changing the scoring.
-
-### 6. Resolve questions and serialize
-
-Batch focused questions by game, inning, player, and physical cell. State the
-visible candidate and scoring impact. Ask whether a fly out with an RBI is a
-sacrifice fly rather than silently selecting that interpretation.
-
-Retain user corrections in the ledger. Once scoring ambiguities, names, ending,
-and approved notation fallbacks are resolved, generate the CSVs under the
-existing write authorization; do not request repeated approval for settled
-items. Keep remaining uncertainties explicit in `data/game-log/` drafts and
-withhold affected final logs from `data/input/`.
-
-## Validate and deliver
-
-Activate `conda activate softball-stats` before executing Python. Use
-`python -B` and call `parse_csv_file` directly on draft CSVs in `data/game-log/`.
-After validation, move session-created CSV drafts into `data/input/` and check
-the final paths through the parser. Do not call the
-CLI, import use case, repositories, exporters, `make run`, or reparse commands.
-
-Compare parsed metadata, exact outcomes, per-player appearance order/counts,
-bases, RBIs, and runs with the ledger. Verify no unexpected warnings or dropped
-appearances. Reconcile innings separately because CSV attempt columns do not
-encode innings. Parser success is not proof an import was performed.
-
-Check exact tokens against the source/user-confirmed notation, not only a ledger
-copied from the CSV. Enumerate any remaining generic outs and their evidence.
-When correcting an existing CSV, preserve other user edits and update only
-session-owned review files (or create a new uniquely named review revision).
-
-Run configured file checks scoped to changed artifacts. Report unavailable
-tools rather than installing them. Deliver:
-
-- CSV paths and extraction method.
-- A source-backed inning ledger with confirmations and approved fallbacks.
-- Per-inning and game run/RBI totals and actual validation results.
-- Remaining limitations, including any representation or import blockers.
 
 ## Review cases
 

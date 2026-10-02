@@ -18,3 +18,10 @@ Thumbs.db
 
 # Egg info
 *.egg-info/
+
+# Generated reports and database (rebuild from data/input CSVs)
+/data/output/*.xlsx
+/data/output/*.db
+/data/output/*.db-journal
+/data/output/*.db-wal
+/data/output/*.db-shm

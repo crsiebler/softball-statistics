@@ -11,6 +11,12 @@ If unclear, ask which team. Use that team's name and emoji in the shared templat
 
 ## Message template
 
+Emojis are part of the requested recap format. Preserve the team emoji in the
+heading and closing, plus the section and season-leader emojis shown below for
+each included section or category. If the user requests an emoji-free message,
+omit emojis while preserving the remaining format. This formatting requirement
+applies to the finished team message, not surrounding explanations or tool updates.
+
 Fill this template from the supplied game logs, season totals, and narrative. Braces are
 substitution fields, not text to include in the final message. Omit unsupported sections
 and unused highlight lines. Deliver a finished, copyable message.
