@@ -44,6 +44,13 @@
 - Commits: Conventional format (`feat: add login button`)
 - PRs: Create for human review, don't merge
 
+### Git LFS for Score-Sheet Photographs
+- `.gitattributes` tracks `data/game-log/*.jpeg` with Git LFS. Do not assume other image extensions are covered.
+- Before treating a photograph's size as a commit blocker, inspect `.gitattributes` and run `git check-attr filter -- <path>` and `git lfs version`.
+- Stage covered photographs normally with `git add`; verify the staged blob is an LFS pointer with `git show :<path>` and run the configured checks. The original image's size alone does not require a large-file-check exception.
+- Include source photographs in authorized game-data commits through LFS. Do not omit, recompress, or add size-check exceptions for them merely because the working-tree file exceeds 500 KB.
+- Verify the LFS upload succeeds when pushing. If LFS is unavailable or an upload fails, report the actual blocker; do not bypass checks or alter tracking configuration without authorization.
+
 ## Build/Lint/Test Commands
 - Test all: `make test` (pytest with coverage)
 - Test single: `pytest tests/test_file.py::TestClass::test_method -v`
