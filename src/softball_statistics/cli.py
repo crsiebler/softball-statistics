@@ -17,6 +17,7 @@ from softball_statistics.interfaces import (
     QueryRepository,
 )
 from softball_statistics.parsers.csv_parser import CSVParseError, CSVParser
+from softball_statistics.season_links import DEFAULT_SEASON_LINKS, find_season_links
 from softball_statistics.use_cases import (
     CalculateStatsUseCase,
     ListLeaguesUseCase,
@@ -24,6 +25,8 @@ from softball_statistics.use_cases import (
     ProcessGameUseCase,
     ValidationError,
 )
+
+DEFAULT_DB_PATH = "data/output/stats.db"
 
 
 class CLI:
@@ -87,7 +90,22 @@ Examples:
             "--list-teams", action="store_true", help="List teams (requires --league)"
         )
 
-        parser.add_argument("--league", type=str, help="League name for --list-teams")
+        parser.add_argument(
+            "--league", type=str, help="League name for teams or season links"
+        )
+        parser.add_argument("--season", help="Season name for --list-season-links")
+        parser.add_argument("--team", help="Team name for --list-season-links")
+        parser.add_argument(
+            "--list-season-links",
+            action="store_true",
+            help="List saved Google Sheet URLs",
+        )
+        parser.add_argument(
+            "--season-links-file",
+            type=Path,
+            default=DEFAULT_SEASON_LINKS,
+            help="Season link registry (default: data/season_links.json)",
+        )
 
         parser.add_argument(
             "--reparse-all",
@@ -104,14 +122,27 @@ Examples:
         parser.add_argument(
             "--db",
             type=str,
-            default="stats.db",
-            help="SQLite database file path (default: stats.db)",
+            default=DEFAULT_DB_PATH,
+            help=f"SQLite database file path (default: {DEFAULT_DB_PATH})",
         )
 
         args_parsed = parser.parse_args(args)
 
         try:
-            if args_parsed.list_leagues:
+            if args_parsed.list_season_links:
+                links = find_season_links(
+                    args_parsed.season_links_file,
+                    league=args_parsed.league,
+                    season=args_parsed.season,
+                    team=args_parsed.team,
+                )
+                if not links:
+                    print("No season links found.")
+                for entry in links:
+                    print(f"{entry.league} / {entry.season} / {entry.team}:")
+                    for url in entry.urls:
+                        print(f"  {url}")
+            elif args_parsed.list_leagues:
                 self._list_leagues()
             elif args_parsed.list_teams:
                 if not args_parsed.league:
@@ -316,7 +347,7 @@ def main():
     """Main CLI entry point."""
     # Parse args first to get db path
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--db", type=str, default="stats.db")
+    parser.add_argument("--db", type=str, default=DEFAULT_DB_PATH)
     db_args, remaining_args = parser.parse_known_args()
 
     # TODO: Use DI container or factory to inject dependencies
@@ -324,6 +355,7 @@ def main():
     from softball_statistics.repository.sqlite import SQLiteRepository
 
     db_path = db_args.db
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     repo = SQLiteRepository(db_path)  # type: ignore
     parser = CSVParser()
     exporter = ExcelExporter(repo)
