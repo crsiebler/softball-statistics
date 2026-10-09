@@ -26,6 +26,8 @@ from softball_statistics.use_cases import (
     ValidationError,
 )
 
+DEFAULT_DB_PATH = "data/output/stats.db"
+
 
 class CLI:
     """Command-line interface class."""
@@ -120,8 +122,8 @@ Examples:
         parser.add_argument(
             "--db",
             type=str,
-            default="stats.db",
-            help="SQLite database file path (default: stats.db)",
+            default=DEFAULT_DB_PATH,
+            help=f"SQLite database file path (default: {DEFAULT_DB_PATH})",
         )
 
         args_parsed = parser.parse_args(args)
@@ -345,7 +347,7 @@ def main():
     """Main CLI entry point."""
     # Parse args first to get db path
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--db", type=str, default="stats.db")
+    parser.add_argument("--db", type=str, default=DEFAULT_DB_PATH)
     db_args, remaining_args = parser.parse_known_args()
 
     # TODO: Use DI container or factory to inject dependencies
@@ -353,6 +355,7 @@ def main():
     from softball_statistics.repository.sqlite import SQLiteRepository
 
     db_path = db_args.db
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     repo = SQLiteRepository(db_path)  # type: ignore
     parser = CSVParser()
     exporter = ExcelExporter(repo)
