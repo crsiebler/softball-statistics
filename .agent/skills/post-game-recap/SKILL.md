@@ -9,6 +9,36 @@ Identify the team from the prompt or labeled logs, then read its short context:
 [Cyclones](references/cyclones.md) or [Don't Cha Know](references/dont-cha-know.md).
 If unclear, ask which team. Use that team's name and emoji in the shared template below.
 
+## Publish the season stats
+
+When the recap uses an application-generated workbook, check whether publishing
+the updated stats is already authorized and whether the destination is known.
+Ask early while preparing the recap; do not block independent drafting.
+
+- New season: ask whether to upload the workbook and where to create the shared
+  spreadsheet (destination folder, if relevant). Do not create one without approval.
+- Existing season: ask whether to update the published stats and request the exact
+  Google Sheets or Drive file URL to replace if it is not already established.
+  Reuse authorization and destinations supplied for this task; do not ask again.
+- Make direction explicit: publish the local XLSX to the shared destination.
+  Never replace application-generated local output with a downloaded copy as
+  part of the recap workflow.
+- Inspect the destination's identity, file type, team, season, and tabs first.
+  If it includes other seasons or user-maintained tabs absent from the workbook,
+  clarify whether to preserve them or replace the entire workbook before removal.
+- Use available Google Drive/Sheets tools and their matching skills. A raw XLSX
+  stored in Drive can be replaced in place with a supported file-update action.
+  A native Google Sheet requires a supported in-place Sheets update or import
+  workflow; do not assume a new-file import replaces an existing spreadsheet.
+  Preserve the established file ID, URL, and sharing unless otherwise requested.
+- After an authorized upload/update, read back the destination and compare tab
+  coverage, latest-game results, season totals, and representative formatting
+  with the local source. Report any publishing or verification limitation honestly.
+  Do not claim an upload succeeded merely because the local workbook is current.
+- Use the verified destination link in the recap. If publishing is declined or
+  unavailable, finish the recap from the supplied workbook and report publishing
+  status separately; never invent a link or imply the shared copy is updated.
+
 ## Message template
 
 Emojis are part of the requested recap format. Preserve the team emoji in the
@@ -46,7 +76,7 @@ and unused highlight lines. Deliver a finished, copyable message.
 Through {number} games, we’re hitting *{.AVG} as a team* with *{hits} hits, {runs} runs, {doubles} doubles, and {home runs} home runs*. {Short takeaway.}
 
 📊 *Full stats:*
-{spreadsheet link from the current prompt}
+{verified publishing link or user-supplied link established for this team and season}
 
 {Brief encouraging close.} {emoji}💪
 ```
@@ -90,5 +120,7 @@ Keep the two teams' data separate. Calculate combined rates from summed counts,
 not averaged percentages; display rates to three decimals. If data conflicts,
 omit the affected claim or clarify it rather than silently copying a suspect total.
 An uncertain score stays uncertain: “run-ruled in Game 2” is enough.
-Use only the spreadsheet link supplied for this recap; omit the link section if absent.
+Use the verified publishing link or the user-supplied destination established for
+this team and season in the current task. Prefer a newly confirmed destination
+over earlier links. Omit the link section if no destination is established.
 Do not reuse old opponents, schedules, championships, or stats from style examples.
