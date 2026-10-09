@@ -87,6 +87,30 @@ games are reflected in later cumulative summaries. Existing consolidated
 no workbook. Filenames are sanitized; colliding league/season names receive an
 ID suffix. Worksheet names are shortened and disambiguated when necessary.
 
+### Season share links
+
+`data/season_links.json` is the tracked registry for Google Sheet share URLs.
+Each record has `league`, `season`, `team`, and a nonempty `urls` list. Use the
+same names as the application (for example, `Fray`, `Late Summer 2026`, and
+`Cyclones`). Name-based records survive database rebuilds; no SQLite IDs or
+database migration are involved. Add or update records directly in the JSON file.
+Multiple URLs are supported when a season intentionally has several destinations.
+
+```bash
+softball-stats --list-season-links --league "Fray" --season "Late Summer 2026" --team "Cyclones"
+```
+
+Omit filters to list all saved destinations. Run from the repository root or
+pass `--season-links-file /path/to/season_links.json`. Lookup validates the
+registry and rejects duplicate identities and invalid Google Sheet URLs.
+
+The post-game recap skill reads this registry and records confirmed links there.
+It can upload the complete workbook for a new season with authorization. For
+existing seasons, open the recap link and manually replace the shared file from
+the generated XLSX. For newly uploaded seasons, manually enable **Anyone with
+the link → Viewer**. Saving a URL does not verify freshness or sharing permissions.
+The application does not upload files or change Google Drive permissions.
+
 ## Development
 
 ### Running Tests

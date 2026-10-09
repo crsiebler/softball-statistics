@@ -11,33 +11,54 @@ If unclear, ask which team. Use that team's name and emoji in the shared templat
 
 ## Publish the season stats
 
-When the recap uses an application-generated workbook, check whether publishing
-the updated stats is already authorized and whether the destination is known.
-Ask early while preparing the recap; do not block independent drafting.
+Upload only for a new season that does not already have a published stats file.
+Resolve the team and season from the current task. Read the application's
+[season link registry](../../../data/season_links.json), matching `league`,
+`season`, and `team` by name (case-insensitive). The `urls` list supports multiple
+destinations. Never substitute another season's link. A missing record does not
+prove the season is new: ask whether a sheet already exists before uploading.
+Ask early without blocking independent drafting.
 
-- New season: ask whether to upload the workbook and where to create the shared
-  spreadsheet (destination folder, if relevant). Do not create one without approval.
-- Existing season: ask whether to update the published stats and request the exact
-  Google Sheets or Drive file URL to replace if it is not already established.
-  Reuse authorization and destinations supplied for this task; do not ask again.
-- Make direction explicit: publish the local XLSX to the shared destination.
-  Never replace application-generated local output with a downloaded copy as
-  part of the recap workflow.
-- Inspect the destination's identity, file type, team, season, and tabs first.
-  If it includes other seasons or user-maintained tabs absent from the workbook,
-  clarify whether to preserve them or replace the entire workbook before removal.
-- Use available Google Drive/Sheets tools and their matching skills. A raw XLSX
-  stored in Drive can be replaced in place with a supported file-update action.
-  A native Google Sheet requires a supported in-place Sheets update or import
-  workflow; do not assume a new-file import replaces an existing spreadsheet.
-  Preserve the established file ID, URL, and sharing unless otherwise requested.
-- After an authorized upload/update, read back the destination and compare tab
-  coverage, latest-game results, season totals, and representative formatting
-  with the local source. Report any publishing or verification limitation honestly.
-  Do not claim an upload succeeded merely because the local workbook is current.
-- Use the verified destination link in the recap. If publishing is declined or
-  unavailable, finish the recap from the supplied workbook and report publishing
-  status separately; never invent a link or imply the shared copy is updated.
+Record user-confirmed destinations and verified new imports in this JSON file.
+Keep one record per league/season/team and preserve unrelated records. Use the
+newly confirmed destination when correcting a mistaken link; keep multiple URLs
+only when they are intentional destinations for that season. Do not copy URLs
+into team references. From the repository root, validate and retrieve with:
+
+```bash
+conda activate softball-stats
+softball-stats --list-season-links --league "Fray" --season "Late Summer 2026" --team "Cyclones"
+```
+
+- New season: ask whether to upload the application-generated local XLSX to
+  Google Drive as a new native Google Sheet and where to place it. Reuse explicit
+  authorization and destination details already supplied for this task.
+- Use available Google Drive/Sheets tools and their matching skills to import
+  the complete XLSX. Do not recreate the workbook by copying individual cells
+  or duplicating an older game's tab. Never modify the local generated XLSX.
+- Existing season: do not upload a replacement, create a duplicate, overwrite
+  cells, duplicate tabs, or use browser automation to replace the spreadsheet
+  as part of this skill. Reuse the established season link and remind the user
+  to replace the shared spreadsheet manually from the updated local XLSX.
+  Request the link only if it is unknown; do not imply the shared copy is current
+  without readback verification or user confirmation.
+- After a new-season upload, confirm it succeeded and verify the destination
+  file's identity and URL before saving the link. Investigate conversion or
+  formatting issues only if the upload reports a problem or a discrepancy is
+  observed.
+- If uploading is declined or unavailable, finish the recap from the supplied
+  workbook and report publishing status separately. Never invent a link or
+  treat local workbook freshness as evidence that shared stats were updated.
+
+### Manual publishing handoff
+
+Include the saved URL(s) as clickable links in the recap so the user can open
+the sheet directly. Outside the copyable team message, identify the local XLSX
+and remind the user of the applicable step: replace the shared file for an
+existing season, or set Share → General access → Anyone with the link → Viewer
+for a newly uploaded season. The user handles these steps; do not change sharing
+permissions as part of this skill. A saved URL is a destination, not evidence
+that its content is current or that public visibility has been enabled.
 
 ## Message template
 

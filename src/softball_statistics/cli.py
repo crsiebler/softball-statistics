@@ -17,6 +17,7 @@ from softball_statistics.interfaces import (
     QueryRepository,
 )
 from softball_statistics.parsers.csv_parser import CSVParseError, CSVParser
+from softball_statistics.season_links import DEFAULT_SEASON_LINKS, find_season_links
 from softball_statistics.use_cases import (
     CalculateStatsUseCase,
     ListLeaguesUseCase,
@@ -87,7 +88,22 @@ Examples:
             "--list-teams", action="store_true", help="List teams (requires --league)"
         )
 
-        parser.add_argument("--league", type=str, help="League name for --list-teams")
+        parser.add_argument(
+            "--league", type=str, help="League name for teams or season links"
+        )
+        parser.add_argument("--season", help="Season name for --list-season-links")
+        parser.add_argument("--team", help="Team name for --list-season-links")
+        parser.add_argument(
+            "--list-season-links",
+            action="store_true",
+            help="List saved Google Sheet URLs",
+        )
+        parser.add_argument(
+            "--season-links-file",
+            type=Path,
+            default=DEFAULT_SEASON_LINKS,
+            help="Season link registry (default: data/season_links.json)",
+        )
 
         parser.add_argument(
             "--reparse-all",
@@ -111,7 +127,20 @@ Examples:
         args_parsed = parser.parse_args(args)
 
         try:
-            if args_parsed.list_leagues:
+            if args_parsed.list_season_links:
+                links = find_season_links(
+                    args_parsed.season_links_file,
+                    league=args_parsed.league,
+                    season=args_parsed.season,
+                    team=args_parsed.team,
+                )
+                if not links:
+                    print("No season links found.")
+                for entry in links:
+                    print(f"{entry.league} / {entry.season} / {entry.team}:")
+                    for url in entry.urls:
+                        print(f"  {url}")
+            elif args_parsed.list_leagues:
                 self._list_leagues()
             elif args_parsed.list_teams:
                 if not args_parsed.league:
