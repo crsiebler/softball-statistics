@@ -1,0 +1,48 @@
+{
+  "league": "fray",
+  "season": "Fall 2026",
+  "games": [
+    {
+      "id": "294641",
+      "start": "2026-10-22T20:00:00",
+      "home": "Cyclones",
+      "away": "Enrichment Time",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    },
+    {
+      "id": "294643",
+      "start": "2026-10-29T18:00:00",
+      "home": "Bad Pitches Only",
+      "away": "Cyclones",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    },
+    {
+      "id": "294649",
+      "start": "2026-11-05T20:00:00",
+      "home": "Cyclones",
+      "away": "Bat Intentions",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    },
+    {
+      "id": "294652",
+      "start": "2026-11-12T19:00:00",
+      "home": "Scared Hitless",
+      "away": "Cyclones",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    },
+    {
+      "id": "294657",
+      "start": "2026-11-19T20:00:00",
+      "home": "Alcoballics!",
+      "away": "Cyclones",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    },
+    {
+      "id": "294659",
+      "start": "2026-12-03T18:00:00",
+      "home": "Cyclones",
+      "away": "We have soft balls",
+      "location": "350 E Oak St, Phoenix, AZ 85004"
+    }
+  ]
+}
