@@ -63,22 +63,27 @@ def test_separate_workbooks_and_historical_totals(season_repo, tmp_path):
     assert {str(tmp_path / name) for name in expected} == set(paths)
 
     with_workbooks = [
-        ("winter", 2, 1, "0.500", 1),
-        ("spring", 5, 2, "0.500", 3),
-        ("summer", 6, 3, "0.600", 4),
+        ("winter", 2, 1, "0.500"),
+        ("spring", 5, 2, "0.500"),
+        ("summer", 6, 3, "0.600"),
     ]
-    for season, pa, hits, ba, games in with_workbooks:
+    for season, pa, hits, ba in with_workbooks:
         workbook = load_workbook(tmp_path / f"stats-fray-{season}_2026.xlsx")
         try:
-            summary = sheet_records(workbook, "League Summary")
-            summary_sheet = workbook["League Summary"]
-            assert len(summary) == 1
-            assert summary_sheet["I1"].border.bottom.style == "thin"
-            assert summary_sheet["J1"].border.bottom.style == "thin"
-            assert summary[0]["League"] == "Fray"
-            assert summary[0]["Games Played"] == games
-            assert summary[0]["Team BA"] == ba
-            player = sheet_records(workbook, "Player Summary")[0]
+            game_numbers = [2, 1] if season == "spring" else [1]
+            assert workbook.sheetnames == [
+                "Cyclo Total",
+                f"Cyclo {season.title()} 2026 Total",
+                *[
+                    f"Cyclo {season.title()} 2026 Game {number}"
+                    for number in game_numbers
+                ],
+                "Legend",
+            ]
+            cumulative = sheet_records(workbook, "Cyclo Total")
+            assert cumulative[-1]["Player"] == "TEAM TOTALS"
+            assert cumulative[-1]["BA"] == ba
+            player = cumulative[0]
             assert (player["Player"], player["PA"], player["H"], player["BA"]) == (
                 "Alex",
                 pa,
@@ -116,9 +121,8 @@ def test_backfill_refreshes_later_totals_but_does_not_leak_future_games(
     assert len(paths) == 4
     workbook = load_workbook(tmp_path / "stats-fray-spring_2026.xlsx")
     try:
-        player = sheet_records(workbook, "Player Summary")[0]
+        player = sheet_records(workbook, "Cyclo Total")[0]
         assert (player["PA"], player["H"], player["HR"]) == (6, 3, 0)
-        assert sheet_records(workbook, "League Summary")[0]["Games Played"] == 4
         assert len([s for s in workbook.sheetnames if " Game " in s]) == 2
     finally:
         workbook.close()
@@ -136,10 +140,11 @@ def test_cli_reports_actual_workbooks_for_all_teams(season_repo, tmp_path, capsy
     try:
         assert "Cyclo Spring 2026 Game 1" in workbook.sheetnames
         assert "Storm Spring 2026 Game 3" in workbook.sheetnames
-        assert {r["Team"] for r in sheet_records(workbook, "League Summary")} == {
-            "Cyclones",
-            "Storm",
-        }
+        assert sheet_records(workbook, "Cyclo Total")[0]["Player"] == "Alex"
+        assert sheet_records(workbook, "Storm Total")[0]["Player"] == "Sam"
+        assert "League Summary" not in workbook.sheetnames
+        assert "Player Summary" not in workbook.sheetnames
+        assert workbook.sheetnames[-1] == "Legend"
     finally:
         workbook.close()
 
@@ -153,12 +158,13 @@ def test_colliding_team_abbreviations_and_long_seasons_keep_every_sheet(tmp_path
     assert len(paths) == 1
     workbook = load_workbook(paths[0])
     try:
-        assert len(workbook.sheetnames) == 9
-        assert len({name.casefold() for name in workbook.sheetnames}) == 9
+        assert len(workbook.sheetnames) == 7
+        assert len({name.casefold() for name in workbook.sheetnames}) == 7
         assert all(len(name) <= 31 for name in workbook.sheetnames)
-        # The last two sheets are separate game tabs, not overwritten by initials.
+        assert workbook.sheetnames[-1] == "Legend"
+        # The two tabs before the legend retain games with colliding initials.
         players = [
-            sheet_records(workbook, name)[0] for name in workbook.sheetnames[-2:]
+            sheet_records(workbook, name)[0] for name in workbook.sheetnames[-3:-1]
         ]
         assert [(p["1B"], p["2B"]) for p in players] == [(0, 1), (1, 0)]
     finally:

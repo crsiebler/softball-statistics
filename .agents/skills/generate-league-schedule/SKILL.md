@@ -84,7 +84,7 @@ Activate `conda activate softball-stats` in this repository. Run with paths
 relative to the project root (else resolve the helper relative to this skill):
 
 ```sh
-python .agent/skills/generate-league-schedule/scripts/generate_ics.py \
+python .agents/skills/generate-league-schedule/scripts/generate_ics.py \
   data/schedules/fray-fall-2026.json data/schedules/fray-fall-2026.ics
 ```
 

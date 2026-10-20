@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from copy import copy
 from pathlib import Path
 from typing import Any
 
@@ -14,11 +13,9 @@ from softball_statistics.exporters.excel_exporter import (
     ExcelExportError,
     _abbreviate_team_name,
     _create_cumulative_team_sheet,
-    _create_league_summary_sheet,
     _create_legend_sheet,
     _create_per_game_sheet,
     _create_season_total_sheet,
-    _write_player_summary_sheet,
 )
 from softball_statistics.interfaces import QueryRepository
 from softball_statistics.use_cases import CalculateStatsUseCase
@@ -42,54 +39,8 @@ def _sheet_name(label: str, writer: pd.ExcelWriter) -> str:
     return candidate
 
 
-def _player_rows(players: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    columns = {
-        "Player": "player_name",
-        "PA": "plate_appearances",
-        "AB": "at_bats",
-        "H": "hits",
-        "1B": "singles",
-        "2B": "doubles",
-        "3B": "triples",
-        "HR": "home_runs",
-        "BB": "walks",
-        "SF": "sacrifice_flies",
-        "HRO": "home_run_outs",
-        "RBI": "rbis",
-        "R": "runs_scored",
-    }
-    return [
-        {
-            **{column: player[field] for column, field in columns.items()},
-            "BA": f"{player['batting_average']:.3f}",
-            "OBP": f"{player['on_base_percentage']:.3f}",
-            "SLG": f"{player['slugging_percentage']:.3f}",
-            "OPS": f"{player['ops']:.3f}",
-        }
-        for player in players
-    ]
-
-
 def _write_snapshot(snapshot: dict[str, Any], path: Path) -> None:
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        _create_legend_sheet(writer)
-        _create_league_summary_sheet(
-            {**snapshot, "team_stats": snapshot["cumulative_team_stats"]}, writer
-        )
-        summary = writer.sheets["League Summary"]
-        summary.cell(1, 9, "Through Date")
-        summary.cell(1, 10, "Workbook Season")
-        header_border = copy(summary["H1"].border)
-        summary["I1"].border = header_border
-        summary["J1"].border = header_border
-        for row in range(2, summary.max_row + 1):
-            summary.cell(row, 9, snapshot["as_of"])
-            summary.cell(row, 10, snapshot["season"])
-        summary.column_dimensions["I"].width = 16
-        summary.column_dimensions["J"].width = 24
-        summary.auto_filter.ref = summary.dimensions
-        _write_player_summary_sheet(_player_rows(snapshot["players"]), writer)
-
         for team_name in snapshot["team_stats"]:
             short_name = _abbreviate_team_name(team_name)
             cumulative = snapshot["cumulative_team_stats"][team_name]
@@ -122,6 +73,8 @@ def _write_snapshot(snapshot: dict[str, Any], path: Path) -> None:
                 writer,
                 sheet_name=_sheet_name(label, writer),
             )
+
+        _create_legend_sheet(writer)
 
 
 def export_season_workbooks(

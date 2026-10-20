@@ -7,7 +7,7 @@ import pytest
 
 SCRIPT = (
     Path(__file__).resolve().parents[1]
-    / ".agent/skills/generate-league-schedule/scripts/generate_ics.py"
+    / ".agents/skills/generate-league-schedule/scripts/generate_ics.py"
 )
 generate_calendar = runpy.run_path(str(SCRIPT))["generate_calendar"]
 
