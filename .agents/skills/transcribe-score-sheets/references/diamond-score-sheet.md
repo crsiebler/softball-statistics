@@ -26,6 +26,14 @@ filled diamond | out number / slash | confidence | question
 ```
 
 - Lower-left dots are RBIs; count them individually.
+- Determine the initial hit from the circled printed `1B`, `2B`, `3B`, or `HR`
+  beside the diamond; a circled `BB` records a walk. Distinguish these outcome
+  circles from circled out numbers inside the diamond.
+- Drawn basepaths show subsequent runner advancement. They do not increase
+  credited hit bases: circled `1B` followed by advancement to second remains a
+  single. If the outcome circle is absent, unclear, or conflicts with another
+  play label, flag the result for confirmation rather than inferring it from
+  the furthest base reached.
 - A fully filled diamond means that batter scored one run.
 - Partial basepaths alone do not establish a scored run.
 - A lower-right slash ends an inning but may be missing.
@@ -100,6 +108,14 @@ Legitimate runs without RBI are possible: obtain confirmation and document
 them. The current importer rejects unequal game RBI/run totals, so report a
 confirmed exception as an import blocker rather than changing the scoring.
 
+Before finalizing, compare every hit token with its circled printed outcome
+on the source, independently of basepaths, runs, and RBIs. Record player,
+inning/physical cell, initial outcome, and final token in the review ledger.
+Parser acceptance and balanced run/RBI totals do not verify hit values.
+If any hit was misread from later advancement, repeat this comparison for
+every hit on all supplied sheets, retaining user-confirmed corrections and
+reporting any remaining ambiguous circles.
+
 ## Review cases
 
 Check the workflow against clear and blurred cells, missing slashes, batting
@@ -108,6 +124,18 @@ flies, unclear HR modifiers, non-RBI runs, shortened games, and conflicting
 totals. The September 14, 2026 game-specific `*-review.md` ledgers under
 `data/game-log/` provide a concrete example, not a general OCR accuracy benchmark.
 Never claim accuracy or evaluation gains without measured results.
+
+Use these user-confirmed October 19, 2026 plays to check the distinction
+between initial hits and later advances:
+
+| Game | Player | Inning | Initial result | Later event | Required token |
+| --- | --- | --- | --- | --- | --- |
+| 07 | Pat | 2 | Circled `1B` | Advanced beyond first | `1B` |
+| 08 | Cory | 3 | Circled `1B` | Advanced to second; out at home on Blake's hit | `1B` |
+| 08 | Blake | 3 | Circled `1B`, one RBI | Advanced to second on Pat's hit | `1B*` |
+
+These examples guide source interpretation; do not copy their outcomes into
+other cells without inspecting those cells.
 
 Use these user-confirmed Game 2 plays as exact-notation acceptance examples:
 
