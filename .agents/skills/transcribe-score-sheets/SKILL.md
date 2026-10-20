@@ -93,7 +93,9 @@ formats. Record filename-derived metadata separately from visible evidence.
 ## Read and reconcile
 
 Use separate passes for outcomes, RBI marks, and run marks. Preserve each
-player's left-to-right appearance order. Reinspect fielding notation separately
+player's left-to-right appearance order. For diamond sheets, determine the
+initial hit from the circled printed outcome, following the matching reference;
+do not credit later basepath advancement as extra hit bases. Reinspect fielding notation separately
 from modifiers; compare handwriting within the source and retain exact labels.
 A fielding sequence does not prove the batter was the runner retired. A runner
 out does not replace that runner's earlier hit or walk.
@@ -137,7 +139,11 @@ appearances. Reconcile supported innings separately because CSV attempt columns 
 encode innings; do not fabricate missing inning evidence. Parser success is not proof an import was performed.
 
 Check exact tokens against the source/user-confirmed notation, not only a ledger
-copied from the CSV. Enumerate any remaining generic outs and their evidence.
+copied from the CSV. Audit hit values independently of RBI/run reconciliation:
+parser success and balanced totals cannot detect a single recorded as a double.
+If an initial-hit-versus-advance error is found, recheck every hit on all supplied
+sheets before finalizing, preserving explicit user corrections. Enumerate any
+remaining generic outs and their evidence.
 When correcting an existing CSV, preserve other user edits and update only
 session-owned review files (or create a new uniquely named review revision).
 
