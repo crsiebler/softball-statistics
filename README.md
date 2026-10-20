@@ -69,15 +69,12 @@ data/output/stats-scottsdale-fall_2026.xlsx
 
 All games remain in the same SQLite database. Each workbook contains:
 
-- **Legend**: statistic definitions.
-- **League Summary**: cumulative team statistics for that league through the
-  season's latest recorded game date, shown in the **Through Date** column.
-- **Player Summary**: cumulative player statistics for that league through the
-  same date, combining matching player names across teams/seasons.
-- **Team Total** tabs: cumulative statistics for each team playing that season.
+- **Team Total** tabs: cumulative statistics for each team playing that season,
+  through the season's latest recorded game date.
 - **Season Total** tabs: statistics from that season only.
 - **Game** tabs: one tab per team/game from that season, ordered by date and
-  game number, including separate tabs for doubleheaders.
+  game number newest first, including separate tabs for doubleheaders.
+- **Legend**: statistic definitions, always the final tab.
 
 For example, a Spring workbook includes earlier Winter games in cumulative
 summaries, but does not include later Summer games or another league's games.
