@@ -3,6 +3,14 @@
   "seasons": [
     {
       "league": "Fray",
+      "season": "Fall 2026",
+      "team": "Cyclones",
+      "urls": [
+        "https://docs.google.com/spreadsheets/d/1S9cSfgbxVu6l74OjxQmmde15haQk_bC-8eYn87AkbIk/edit"
+      ]
+    },
+    {
+      "league": "Fray",
       "season": "Late Summer 2026",
       "team": "Cyclones",
       "urls": [
