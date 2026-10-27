@@ -46,6 +46,7 @@ class TestExcelExporter:
         export_to_excel({}, str(output_path), query_repo=repo)
 
         sheet = load_workbook(output_path)["Player Summary"]
+        assert sheet.freeze_panes == "B1"
         headers = [cell.value for cell in sheet[1]]
         player = dict(zip(headers, [cell.value for cell in sheet[2]]))
         assert player["BA"] == "1.000"

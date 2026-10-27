@@ -600,6 +600,7 @@ def _write_player_summary_sheet(
 
         # Format the sheet
         worksheet = writer.sheets["Player Summary"]
+        worksheet.freeze_panes = "B1"
         worksheet.column_dimensions["A"].width = 20  # Player name
         worksheet.column_dimensions["B"].width = 8  # PA
         worksheet.column_dimensions["C"].width = 8  # AB
@@ -792,6 +793,7 @@ def _create_cumulative_team_sheet(
         # Format the sheet
         worksheet = writer.sheets[sheet_name]
         worksheet.sheet_properties.tabColor = "FF0000FF"  # Blue for cumulative
+        worksheet.freeze_panes = "B1"
         worksheet.column_dimensions["A"].width = 20  # Player name
         worksheet.column_dimensions["B"].width = 8  # PA
         worksheet.column_dimensions["C"].width = 8  # AB
@@ -896,6 +898,7 @@ def _create_season_total_sheet(
         # Format
         worksheet = writer.sheets[sheet_name]
         worksheet.sheet_properties.tabColor = "FF00FF00"  # Green for season totals
+        worksheet.freeze_panes = "B1"
         for col, width in [
             ("A", 20),
             ("B", 8),
@@ -1005,6 +1008,7 @@ def _create_per_game_sheet(
         # Format
         worksheet = writer.sheets[sheet_name]
         worksheet.sheet_properties.tabColor = "FFFFFF00"  # Yellow for per-game
+        worksheet.freeze_panes = "B1"
         for col, width in [
             ("A", 20),  # Player
             ("B", 8),  # PA
