@@ -80,6 +80,11 @@ def test_separate_workbooks_and_historical_totals(season_repo, tmp_path):
                 ],
                 "Legend",
             ]
+            assert all(
+                workbook[name].freeze_panes == "B1"
+                for name in workbook.sheetnames
+                if name != "Legend"
+            )
             cumulative = sheet_records(workbook, "Cyclo Total")
             assert cumulative[-1]["Player"] == "TEAM TOTALS"
             assert cumulative[-1]["BA"] == ba
