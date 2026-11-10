@@ -18,6 +18,7 @@ from softball_statistics.exporters.excel_exporter import (
     _create_season_total_sheet,
 )
 from softball_statistics.interfaces import QueryRepository
+from softball_statistics.player_exclusions import PlayerIdentity
 from softball_statistics.use_cases import CalculateStatsUseCase
 from softball_statistics.use_cases.season_exports import SeasonExportUseCase
 
@@ -78,12 +79,15 @@ def _write_snapshot(snapshot: dict[str, Any], path: Path) -> None:
 
 
 def export_season_workbooks(
-    query_repo: QueryRepository, stats: CalculateStatsUseCase, output_path: str
+    query_repo: QueryRepository,
+    stats: CalculateStatsUseCase,
+    output_path: str,
+    exclusions: frozenset[PlayerIdentity] = frozenset(),
 ) -> list[str]:
     """Treat output_path as a filename prefix, e.g. stats-fray-winter_2026.xlsx."""
     try:
         base = Path(output_path)
-        snapshots = SeasonExportUseCase(query_repo, stats).execute()
+        snapshots = SeasonExportUseCase(query_repo, stats, exclusions).execute()
         slugs = [f"{_slug(s['league_name'])}-{_slug(s['season'])}" for s in snapshots]
         counts = Counter(slugs)
         if snapshots:

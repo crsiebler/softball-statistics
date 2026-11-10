@@ -12,6 +12,7 @@ from softball_statistics.calculators.stats_calculator import (
     calculate_slg,
 )
 from softball_statistics.interfaces import QueryRepository
+from softball_statistics.player_exclusions import PlayerIdentity, player_identity
 from softball_statistics.use_cases import CalculateStatsUseCase
 
 COUNT_FIELDS = (
@@ -52,11 +53,18 @@ def _rates(counts: dict[str, Any]) -> dict[str, float]:
     }
 
 
-def _aggregate_players(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _aggregate_players(
+    games: list[dict[str, Any]], exclusions: frozenset[PlayerIdentity] = frozenset()
+) -> list[dict[str, Any]]:
     players: dict[str, dict[str, Any]] = {}
     for game in games:
         for player in game["players"]:
             name = player["player_name"]
+            if (
+                player_identity(game["league_name"], game["team_name"], name)
+                in exclusions
+            ):
+                continue
             if name not in players:
                 players[name] = {
                     "player_name": name,
@@ -69,8 +77,10 @@ def _aggregate_players(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(players.values(), key=lambda player: player["player_name"].casefold())
 
 
-def _team_stats(games: list[dict[str, Any]]) -> dict[str, Any]:
-    players = _aggregate_players(games)
+def _team_stats(
+    games: list[dict[str, Any]], exclusions: frozenset[PlayerIdentity] = frozenset()
+) -> dict[str, Any]:
+    players = _aggregate_players(games, exclusions)
     totals = {field: sum(p[field] for p in players) for field in COUNT_FIELDS}
     return {
         "players": players,
@@ -82,9 +92,15 @@ def _team_stats(games: list[dict[str, Any]]) -> dict[str, Any]:
 class SeasonExportUseCase:
     """Prepare all season snapshots from the same read-only repository."""
 
-    def __init__(self, query_repo: QueryRepository, stats: CalculateStatsUseCase):
+    def __init__(
+        self,
+        query_repo: QueryRepository,
+        stats: CalculateStatsUseCase,
+        exclusions: frozenset[PlayerIdentity] = frozenset(),
+    ):
         self.query_repo = query_repo
         self.stats = stats
+        self.exclusions = exclusions
 
     def execute(self) -> list[dict[str, Any]]:
         """Include only same-league games dated through each season's last game.
@@ -106,6 +122,7 @@ class SeasonExportUseCase:
                             **game,
                             "date": str(game["date"]),
                             "league_id": league.id,
+                            "league_name": league.name,
                             "season": league.season,
                             "team_name": team.name,
                             "players": self.stats.get_game_player_stats(
@@ -141,17 +158,19 @@ class SeasonExportUseCase:
                         "games": season_games,
                         "team_stats": {
                             name: _team_stats(
-                                [g for g in season_games if g["team_name"] == name]
+                                [g for g in season_games if g["team_name"] == name],
+                                self.exclusions,
                             )
                             for name in current_teams
                         },
                         "cumulative_team_stats": {
                             name: _team_stats(
-                                [g for g in history if g["team_name"] == name]
+                                [g for g in history if g["team_name"] == name],
+                                self.exclusions,
                             )
                             for name in historical_teams
                         },
-                        "players": _aggregate_players(history),
+                        "players": _aggregate_players(history, self.exclusions),
                     }
                 )
         return snapshots

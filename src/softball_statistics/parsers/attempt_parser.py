@@ -140,6 +140,11 @@ def _is_fly_ball(attempt: str) -> bool:
     return re.match(r"^f(?:10|[1-9])(?:-(?:10|[1-9]))*$", attempt) is not None
 
 
+def _is_line_drive(attempt: str) -> bool:
+    """Check line outs (L1-L10), including double/triple-play sequences."""
+    return re.fullmatch(r"l(?:10|[1-9])(?:-(?:10|[1-9]))*", attempt.lower()) is not None
+
+
 def _is_ground_ball(attempt: str) -> bool:
     """Check if attempt is a ground ball (e.g., 5-1, 4-6-3)."""
     attempt = attempt.lower()
@@ -172,12 +177,14 @@ def _is_out_notation(attempt: str) -> bool:
 
     Valid out notations include:
     - Fly balls: F followed by number 1-10 (F4, F8, F10, F6-4, etc.)
+    - Line drives: L followed by positions 1-10 (L5, L5-3, L6-4-3, etc.)
     - Ground balls: number-number (5-1, 6-4, 10-1, 4-6-3, etc.) - positions 1-10
     - Other common out notations: A1, P3, etc. - positions 1-10
     - Simple fielding positions: single digit 1-10 (4, 8, etc.) - assumed to be fly balls
     """
     return (
         _is_fly_ball(attempt)
+        or _is_line_drive(attempt)
         or _is_ground_ball(attempt)
         or _is_simple_fielding(attempt)
         or _is_other_out(attempt)

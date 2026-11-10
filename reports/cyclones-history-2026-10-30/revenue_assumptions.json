@@ -1,0 +1,33 @@
+{
+  "currency": "USD",
+  "fee_per_registration": 65,
+  "fee_source": "User supplied a flat $65 per player per season in this chat",
+  "scope": "All Cyclones seasons on commi.sh, including Phoenix and Scottsdale locations",
+  "revenue_basis": "Estimated gross registration fees: roster registrations multiplied by the assumed per-player fee. Actual receipts, discounts, refunds, taxes, and processing charges are not available.",
+  "group_source": "Player groups supplied by the user in this chat",
+  "normalization_note": "Lisa Burgess was supplied twice in the acquisition list and is counted once. All players outside the supplied lists are Other players.",
+  "core_players": [
+    "Bryce Johnson",
+    "Alex Christensen",
+    "Cory Siebler",
+    "Stephen Best",
+    "Nicole Siebler",
+    "Briana Squires",
+    "Elizabeth Keyser",
+    "Jeanette Birk"
+  ],
+  "long_term_acquisitions": [
+    "Paul Jensen",
+    "Rafael De La Torre",
+    "Andrew Mitchell",
+    "Devon Smith",
+    "Michael Burtt",
+    "Manuia Kereti",
+    "Andrew Lamers",
+    "Lisa Burgess",
+    "Anthony Johnson",
+    "Kyla Pontoni",
+    "David Hornback",
+    "Chance Osborne"
+  ]
+}
