@@ -9,7 +9,8 @@ description: Transcribes photographed softball diamond score sheets and co-ed ro
 
 Produce evidence-backed input CSVs from supplied game-log photographs. Resolve
 scoring ambiguities with the user before finalizing affected appearances.
-Preserve batting order, reaching results, RBI credits, and scored runs.
+Preserve batting order, reaching results, RBI credits, and scored runs. Include
+an inning-by-inning text game log with cumulative out tallies.
 
 Follow AGENTS.md and runtime permissions. Read explicitly supplied photographs;
 do not browse unrelated game data. Use `data/game-log/` for transcription drafts
@@ -113,6 +114,18 @@ correct attribution. Never invent credits to balance totals. Confirm legitimate
 non-RBI runs and report the import blocker: the importer requires equal RBI/run
 totals even though the CSV parser does not.
 
+## Inning-by-inning text game log
+
+Read [Inning-by-inning text game log](references/inning-game-log.md) when
+building, presenting, or discussing the inning breakdown. Include it in each
+game's review Markdown and present it in a plain-text code block.
+
+Follow that reference's inning headings, appearance rows, optional out tallies,
+and context fields, including annotations for later runner outs and double
+plays. Keep unresolved innings and order explicit. This log supplements the
+per-player application CSV; do not put inning headings or out/context fields
+into that CSV.
+
 ## Resolve questions and serialize
 
 Batch focused questions by game, inning, player, and physical cell. State the
@@ -152,5 +165,6 @@ tools rather than installing them. Deliver:
 
 - CSV paths and extraction method.
 - A source-backed appearance ledger, supported innings, confirmations, and fallbacks.
+- The inning-by-inning text game log from the reference, with unresolved sections identified.
 - Game run/RBI totals, available inning totals, and actual validation results.
 - Remaining limitations, including any representation or import blockers.

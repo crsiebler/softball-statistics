@@ -20,6 +20,7 @@ from softball_statistics.calculators.stats_calculator import (
 )
 from softball_statistics.interfaces import QueryRepository
 from softball_statistics.models import PlayerStats
+from softball_statistics.player_exclusions import load_player_exclusions
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,11 @@ class ExcelExportError(Exception):
 class ExcelExporter:
     """Excel exporter implementing Exporter interface."""
 
-    def __init__(self, query_repo: QueryRepository):
+    def __init__(
+        self, query_repo: QueryRepository, player_exclusions_file: Optional[Path] = None
+    ):
         self.query_repo = query_repo
+        self.player_exclusions_file = player_exclusions_file
 
     def export(
         self,
@@ -52,12 +56,18 @@ class ExcelExporter:
         )
         from softball_statistics.use_cases import CalculateStatsUseCase
 
+        try:
+            exclusions = load_player_exclusions(self.player_exclusions_file)
+        except (OSError, ValueError) as exc:
+            raise ExcelExportError(f"Failed to load player exclusions: {exc}") from exc
+
         return export_season_workbooks(
             self.query_repo,
             use_case
             if use_case is not None
             else CalculateStatsUseCase(self.query_repo),
             output_path,
+            exclusions,
         )
 
 
@@ -782,74 +792,95 @@ def _create_cumulative_team_sheet(
             }
         )
 
+    df = pd.DataFrame(
+        player_data,
+        columns=[
+            "Player",
+            "PA",
+            "AB",
+            "H",
+            "1B",
+            "2B",
+            "3B",
+            "HR",
+            "BB",
+            "SF",
+            "HRO",
+            "RBI",
+            "R",
+            "BA",
+            "OBP",
+            "SLG",
+            "OPS",
+        ],
+    )
     if player_data:
-        df = pd.DataFrame(player_data)
         # Sort by Player name alphabetically (case-insensitive)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} Total"
-        df.to_excel(writer, sheet_name=sheet_name, index=False)
+    sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} Total"
+    df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        # Format the sheet
-        worksheet = writer.sheets[sheet_name]
-        worksheet.sheet_properties.tabColor = "FF0000FF"  # Blue for cumulative
-        worksheet.freeze_panes = "B1"
-        worksheet.column_dimensions["A"].width = 20  # Player name
-        worksheet.column_dimensions["B"].width = 8  # PA
-        worksheet.column_dimensions["C"].width = 8  # AB
-        worksheet.column_dimensions["D"].width = 8  # H
-        worksheet.column_dimensions["E"].width = 8  # 1B
-        worksheet.column_dimensions["F"].width = 8  # 2B
-        worksheet.column_dimensions["G"].width = 8  # 3B
-        worksheet.column_dimensions["H"].width = 8  # HR
-        worksheet.column_dimensions["I"].width = 8  # BB
-        worksheet.column_dimensions["J"].width = 8  # SF
-        worksheet.column_dimensions["K"].width = 8  # HRO
-        worksheet.column_dimensions["L"].width = 8  # RBI
-        worksheet.column_dimensions["M"].width = 8  # R
-        worksheet.column_dimensions["N"].width = 10  # BA
-        worksheet.column_dimensions["O"].width = 10  # OBP
-        worksheet.column_dimensions["P"].width = 10  # SLG
-        worksheet.column_dimensions["Q"].width = 10  # OPS
+    # Format the sheet
+    worksheet = writer.sheets[sheet_name]
+    worksheet.sheet_properties.tabColor = "FF0000FF"  # Blue for cumulative
+    worksheet.freeze_panes = "B1"
+    worksheet.column_dimensions["A"].width = 20  # Player name
+    worksheet.column_dimensions["B"].width = 8  # PA
+    worksheet.column_dimensions["C"].width = 8  # AB
+    worksheet.column_dimensions["D"].width = 8  # H
+    worksheet.column_dimensions["E"].width = 8  # 1B
+    worksheet.column_dimensions["F"].width = 8  # 2B
+    worksheet.column_dimensions["G"].width = 8  # 3B
+    worksheet.column_dimensions["H"].width = 8  # HR
+    worksheet.column_dimensions["I"].width = 8  # BB
+    worksheet.column_dimensions["J"].width = 8  # SF
+    worksheet.column_dimensions["K"].width = 8  # HRO
+    worksheet.column_dimensions["L"].width = 8  # RBI
+    worksheet.column_dimensions["M"].width = 8  # R
+    worksheet.column_dimensions["N"].width = 10  # BA
+    worksheet.column_dimensions["O"].width = 10  # OBP
+    worksheet.column_dimensions["P"].width = 10  # SLG
+    worksheet.column_dimensions["Q"].width = 10  # OPS
 
-        # Add team totals row
-        team_totals = cumulative_stats.get("team_totals", {})
-        totals_row = {
-            "Player": "TEAM TOTALS",
-            "PA": sum(player["PA"] for player in player_data),
-            "AB": sum(player["AB"] for player in player_data),
-            "H": sum(player["H"] for player in player_data),
-            "1B": sum(player["1B"] for player in player_data),
-            "2B": sum(player["2B"] for player in player_data),
-            "3B": sum(player["3B"] for player in player_data),
-            "HR": sum(player["HR"] for player in player_data),
-            "BB": sum(player["BB"] for player in player_data),
-            "SF": sum(player["SF"] for player in player_data),
-            "HRO": sum(player["HRO"] for player in player_data),
-            "RBI": sum(player["RBI"] for player in player_data),
-            "R": sum(player["R"] for player in player_data),
-            "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
-            "OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
-            "SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
-            "OPS": f"{team_totals.get('team_ops', 0):.3f}",
-        }
-        worksheet.append([])
-        worksheet.append(list(totals_row.values()))
-        thin_border = Border(
-            left=Side(style="thin"),
-            right=Side(style="thin"),
-            top=Side(style="thin"),
-            bottom=Side(style="thin"),
-        )
-        totals_row_num = worksheet.max_row
-        num_cols = len(totals_row)
-        for col in range(1, num_cols + 1):
-            cell = worksheet.cell(row=totals_row_num, column=col)
-            cell.border = thin_border
+    # Add team totals row
+    team_totals = cumulative_stats.get("team_totals", {})
+    totals_row = {
+        "Player": "TEAM TOTALS",
+        "PA": sum(player["PA"] for player in player_data),
+        "AB": sum(player["AB"] for player in player_data),
+        "H": sum(player["H"] for player in player_data),
+        "1B": sum(player["1B"] for player in player_data),
+        "2B": sum(player["2B"] for player in player_data),
+        "3B": sum(player["3B"] for player in player_data),
+        "HR": sum(player["HR"] for player in player_data),
+        "BB": sum(player["BB"] for player in player_data),
+        "SF": sum(player["SF"] for player in player_data),
+        "HRO": sum(player["HRO"] for player in player_data),
+        "RBI": sum(player["RBI"] for player in player_data),
+        "R": sum(player["R"] for player in player_data),
+        "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
+        "OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
+        "SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
+        "OPS": f"{team_totals.get('team_ops', 0):.3f}",
+    }
+    worksheet.append([])
+    worksheet.append(list(totals_row.values()))
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+    totals_row_num = worksheet.max_row
+    num_cols = len(totals_row)
+    for col in range(1, num_cols + 1):
+        cell = worksheet.cell(row=totals_row_num, column=col)
+        cell.border = thin_border
 
-        # Add autofilter
-        max_col_letter = get_column_letter(worksheet.max_column)
-        worksheet.auto_filter.ref = f"A1:{max_col_letter}{worksheet.max_row - 2}"
+    # Add autofilter
+    max_col_letter = get_column_letter(worksheet.max_column)
+    worksheet.auto_filter.ref = f"A1:{max_col_letter}{max(1, worksheet.max_row - 2)}"
 
 
 def _create_season_total_sheet(
@@ -888,76 +919,97 @@ def _create_season_total_sheet(
             }
         )
 
+    df = pd.DataFrame(
+        player_data,
+        columns=[
+            "Player",
+            "PA",
+            "AB",
+            "H",
+            "1B",
+            "2B",
+            "3B",
+            "HR",
+            "BB",
+            "SF",
+            "HRO",
+            "RBI",
+            "R",
+            "BA",
+            "OBP",
+            "SLG",
+            "OPS",
+        ],
+    )
     if player_data:
-        df = pd.DataFrame(player_data)
         df = df.sort_values("Player", key=lambda x: x.str.lower(), ascending=True)
 
-        sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} {season} Total"
-        df.to_excel(writer, sheet_name=sheet_name, index=False)
+    sheet_name = sheet_name or f"{_abbreviate_team_name(team_name)} {season} Total"
+    df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        # Format
-        worksheet = writer.sheets[sheet_name]
-        worksheet.sheet_properties.tabColor = "FF00FF00"  # Green for season totals
-        worksheet.freeze_panes = "B1"
-        for col, width in [
-            ("A", 20),
-            ("B", 8),
-            ("C", 8),
-            ("D", 8),
-            ("E", 8),
-            ("F", 8),
-            ("G", 8),
-            ("H", 8),
-            ("I", 8),
-            ("J", 8),
-            ("K", 8),
-            ("L", 8),
-            ("M", 8),
-            ("N", 10),
-            ("O", 10),
-            ("P", 10),
-            ("Q", 10),
-        ]:
-            worksheet.column_dimensions[col].width = width
+    # Format
+    worksheet = writer.sheets[sheet_name]
+    worksheet.sheet_properties.tabColor = "FF00FF00"  # Green for season totals
+    worksheet.freeze_panes = "B1"
+    for col, width in [
+        ("A", 20),
+        ("B", 8),
+        ("C", 8),
+        ("D", 8),
+        ("E", 8),
+        ("F", 8),
+        ("G", 8),
+        ("H", 8),
+        ("I", 8),
+        ("J", 8),
+        ("K", 8),
+        ("L", 8),
+        ("M", 8),
+        ("N", 10),
+        ("O", 10),
+        ("P", 10),
+        ("Q", 10),
+    ]:
+        worksheet.column_dimensions[col].width = width
 
-        # Add totals
-        team_totals = team_stats
-        totals_row = {
-            "Player": "TEAM TOTALS",
-            "PA": sum(player["PA"] for player in player_data),
-            "AB": sum(player["AB"] for player in player_data),
-            "H": sum(player["H"] for player in player_data),
-            "1B": sum(player["1B"] for player in player_data),
-            "2B": sum(player["2B"] for player in player_data),
-            "3B": sum(player["3B"] for player in player_data),
-            "HR": sum(player["HR"] for player in player_data),
-            "BB": sum(player["BB"] for player in player_data),
-            "SF": sum(player["SF"] for player in player_data),
-            "HRO": sum(player["HRO"] for player in player_data),
-            "RBI": sum(player["RBI"] for player in player_data),
-            "R": sum(player["R"] for player in player_data),
-            "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
-            "OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
-            "SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
-            "OPS": f"{team_totals.get('team_ops', 0):.3f}",
-        }
-        worksheet.append([])
-        worksheet.append(list(totals_row.values()))
-        thin_border = Border(
-            left=Side(style="thin"),
-            right=Side(style="thin"),
-            top=Side(style="thin"),
-            bottom=Side(style="thin"),
-        )
-        totals_row_num = worksheet.max_row
-        num_cols = len(totals_row)
-        for col in range(1, num_cols + 1):
-            cell = worksheet.cell(row=totals_row_num, column=col)
-            cell.border = thin_border
+    # Add totals
+    team_totals = team_stats
+    totals_row = {
+        "Player": "TEAM TOTALS",
+        "PA": sum(player["PA"] for player in player_data),
+        "AB": sum(player["AB"] for player in player_data),
+        "H": sum(player["H"] for player in player_data),
+        "1B": sum(player["1B"] for player in player_data),
+        "2B": sum(player["2B"] for player in player_data),
+        "3B": sum(player["3B"] for player in player_data),
+        "HR": sum(player["HR"] for player in player_data),
+        "BB": sum(player["BB"] for player in player_data),
+        "SF": sum(player["SF"] for player in player_data),
+        "HRO": sum(player["HRO"] for player in player_data),
+        "RBI": sum(player["RBI"] for player in player_data),
+        "R": sum(player["R"] for player in player_data),
+        "BA": f"{team_totals.get('team_batting_average', 0):.3f}",
+        "OBP": f"{team_totals.get('team_on_base_percentage', 0):.3f}",
+        "SLG": f"{team_totals.get('team_slugging_percentage', 0):.3f}",
+        "OPS": f"{team_totals.get('team_ops', 0):.3f}",
+    }
+    worksheet.append([])
+    worksheet.append(list(totals_row.values()))
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+    totals_row_num = worksheet.max_row
+    num_cols = len(totals_row)
+    for col in range(1, num_cols + 1):
+        cell = worksheet.cell(row=totals_row_num, column=col)
+        cell.border = thin_border
 
-        worksheet.auto_filter.ref = (
-            f"A1:{get_column_letter(worksheet.max_column)}{worksheet.max_row - 2}"
-        )
+    worksheet.auto_filter.ref = (
+        f"A1:{get_column_letter(worksheet.max_column)}{max(1, worksheet.max_row - 2)}"
+    )
 
 
 def _create_per_game_sheet(

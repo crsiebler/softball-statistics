@@ -108,6 +108,12 @@ Examples:
         )
 
         parser.add_argument(
+            "--export-only",
+            action="store_true",
+            help="Refresh Excel workbooks from stored games without importing files",
+        )
+
+        parser.add_argument(
             "--reparse-all",
             action="store_true",
             help="Wipe database and reparse all CSV files in data/input/",
@@ -127,6 +133,10 @@ Examples:
         )
 
         args_parsed = parser.parse_args(args)
+        if args_parsed.export_only and (args_parsed.file or args_parsed.reparse_all):
+            parser.error(
+                "--export-only cannot be combined with --file or --reparse-all"
+            )
 
         try:
             if args_parsed.list_season_links:
@@ -151,6 +161,8 @@ Examples:
                 self._list_teams(args_parsed.league)
             elif args_parsed.reparse_all:
                 self._reparse_all(args_parsed)
+            elif args_parsed.export_only:
+                self._export_stats({}, args_parsed.output)
             elif args_parsed.file:
                 self._process_file(
                     args_parsed.file, args_parsed.output, args_parsed.replace_existing

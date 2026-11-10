@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "players": [
+    {"league": "Fray", "team": "Cyclones", "player": "Anthony"},
+    {"league": "Fray", "team": "Cyclones", "player": "Taylor"},
+    {"league": "Fray", "team": "Cyclones", "player": "Ramos"},
+    {"league": "Fray", "team": "Cyclones", "player": "Karen"},
+    {"league": "Fray", "team": "Cyclones", "player": "Aurora"},
+    {"league": "Fray", "team": "Cyclones", "player": "Maggie"},
+    {"league": "Fray", "team": "Cyclones", "player": "Nicole"},
+    {"league": "Fray", "team": "Cyclones", "player": "Chelsea"},
+    {"league": "Fray", "team": "Cyclones", "player": "Kat"},
+    {"league": "Fray", "team": "Cyclones", "player": "Kyle"},
+    {"league": "Fray", "team": "Cyclones", "player": "Rich"}
+  ]
+}

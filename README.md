@@ -88,6 +88,41 @@ games are reflected in later cumulative summaries. Existing consolidated
 no workbook. Filenames are sanitized; colliding league/season names receive an
 ID suffix. Worksheet names are shortened and disambiguated when necessary.
 
+### Hide players from summary totals
+
+Edit `data/player_exclusions.json` to omit players from the Excel **Team Total**
+and **Season Total** tabs and from their batting-stat totals:
+
+```json
+{
+  "version": 1,
+  "players": [
+    {"league": "Fray", "team": "Cyclones", "player": "Guest Player"}
+  ]
+}
+```
+
+Use the full player name from the game logs. Matching ignores capitalization
+and surrounding spaces and applies to every season for that league/team.
+Same-named players on other teams or leagues are unaffected. Excluded players'
+records stay in SQLite and remain visible on individual Game tabs. Counts and
+batting rates on the summary tabs are recalculated from included players; if
+everyone is excluded, those tabs show zero totals.
+
+Refresh workbooks without importing or replacing game data:
+
+```bash
+conda activate softball-stats
+softball-stats --export-only --output data/output/stats.xlsx
+```
+
+Remove an entry and export again to restore that player. The tracked exclusion
+list survives database rebuilds. Run from the repository root so the default
+`data/player_exclusions.json` is found; a missing default file means no exclusions.
+Malformed or duplicate entries stop export before any workbooks are written.
+The initial list is empty. Python callers can supply a different registry path
+as `ExcelExporter(repo, player_exclusions_file=Path("..."))`.
+
 ### Season share links
 
 `data/season_links.json` is the tracked registry for Google Sheet share URLs.

@@ -160,6 +160,36 @@ class TestIsOutNotation:
             "warnings": [],
         }
 
+    @pytest.mark.parametrize("attempt", ["L5-3", "L6-4-3", "L10-4", "l5-3"])
+    def test_line_drive_fielding_sequence(self, attempt):
+        """Keep line-drive double/triple plays as zero-base outs."""
+        assert parse_attempt(attempt) == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 0,
+            "runs_scored": 0,
+            "warnings": [],
+        }
+
+    def test_line_drive_fielding_sequence_with_modifiers(self):
+        """Use the usual modifier rules without changing the out result."""
+        assert parse_attempt(" L5 - 3 * + ") == {
+            "hit_type": "out",
+            "bases": 0,
+            "rbis": 1,
+            "runs_scored": 1,
+            "warnings": [],
+        }
+
+    @pytest.mark.parametrize(
+        "attempt",
+        ["L0-3", "L5-0", "L11-3", "L5-11", "L5-", "L-3", "L5--3", "A5-3"],
+    )
+    def test_invalid_line_drive_fielding_sequence(self, attempt):
+        """Reject malformed chains and positions outside the softball field."""
+        with pytest.raises(AttemptParseError, match="Unknown attempt notation"):
+            parse_attempt(attempt)
+
     def test_out_with_ground_ball(self):
         """Test parsing an out (5-1)."""
         result = parse_attempt("5-1")

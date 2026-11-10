@@ -11,6 +11,27 @@ from softball_statistics.parsers.csv_parser import (
 
 
 class TestCSVParser:
+    def test_preserve_line_drive_double_play(self, tmp_path):
+        """Keep exact fielding notation and surrounding appearances in CSV data."""
+        file_path = tmp_path / "fray-cyclones-fa-02_2026-10-29.csv"
+        file_path.write_text(
+            "Player Name,Attempt,Attempt,Attempt\nBryce,1B+,L5-3,1B\n",
+            encoding="utf-8",
+        )
+
+        result = parse_csv_file(str(file_path))
+
+        assert result["total_plate_appearances"] == 3
+        assert result["warnings"] == []
+        assert [
+            (pa["outcome"], pa["attempt_number"], pa["bases"])
+            for pa in result["plate_appearances"]
+        ] == [("1B+", 1, 1), ("L5-3", 2, 0), ("1B", 3, 1)]
+        double_play = result["plate_appearances"][1]
+        assert double_play["player_name"] == "Bryce"
+        assert double_play["rbis"] == 0
+        assert double_play["runs_scored"] == 0
+
     def test_parse_valid_csv(self):
         """Test parsing a valid CSV file."""
         csv_content = """Player Name,Attempt,Attempt,Attempt
