@@ -4,7 +4,7 @@
 pre-commit version: 4.3.0
 git --version: git version 2.54.0 (Apple Git-157)
 sys.version:
-    3.9.23 | packaged by conda-forge | (main, Jun  4 2025, 18:02:02) 
+    3.9.23 | packaged by conda-forge | (main, Jun  4 2025, 18:02:02)
     [Clang 18.1.8 ]
 sys.executable: /Users/corysiebler/.conda/envs/softball-stats/bin/python3.9
 os.name: posix
