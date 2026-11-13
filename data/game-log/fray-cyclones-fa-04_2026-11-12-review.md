@@ -166,3 +166,17 @@ to its original content and excluded from this commit. This full lint result
 therefore includes that temporary formatting repair; it does not establish that
 the unchanged historical report passes Ruff formatting. The source photograph
 is staged as a Git LFS pointer. Inspection crops and cache files are excluded.
+
+### Pre-push verification and cleanup
+
+The user requested branch publication, a PR, and removal of temporary
+transcription files. The seven session-created PNG inspection crops were
+removed; the original JPEG, final CSV, and this review were preserved.
+To make the complete publication candidate pass required repository checks,
+the historical report builder's existing Ruff formatting issue is included as
+a separate formatting commit. Its parsed Python AST is identical before and
+after formatting. With that change retained, `make lint && make test` passed
+all configured lint hooks and all 236 tests. No typecheck, integration, E2E, or
+build check is configured in the Makefile or project configuration, and no CI
+configuration is present. No package, application, or publishing configuration
+was changed.
