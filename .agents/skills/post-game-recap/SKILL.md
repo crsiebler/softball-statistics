@@ -70,7 +70,8 @@ applies to the finished team message, not surrounding explanations or tool updat
 
 Fill this template from the supplied game logs, season totals, and narrative. Braces are
 substitution fields, not text to include in the final message. Omit unsupported sections
-and unused highlight lines. Deliver a finished, copyable message.
+and unused highlight lines. Deliver the finished team message in a single fenced
+`text` code block for copying into WhatsApp. Keep publishing notes outside it.
 
 ```text
 {emoji} *{team} Post-Game Recap* {emoji}
@@ -91,10 +92,21 @@ and unused highlight lines. Deliver a finished, copyable message.
 🏆 RBI: {player} — *{count}*
 🏃 Runs: {player(s)} — *{count}*
 🚀 Home Runs: {player} — *{count}*
+✌️ Doubles: {player(s)} — *{count}*
+⚡ Triples: {player(s)} — *{count}*
 💥 OPS (min. {N} AB): {player} — *{OPS}*
 👀 Walks: {player(s)} — *{count}*
 
-Through {number} games, we’re hitting *{.AVG} as a team* with *{hits} hits, {runs} runs, {doubles} doubles, and {home runs} home runs*. {Short takeaway.}
+📊 *Season Breakdown*
+Through {number} games, we’re *{hits}-for-{at_bats} ({.AVG})* with *{runs} runs and {rbis} RBI*.
+
+• *{singles} singles, {doubles} doubles, {triples} triples, {home_runs} HR*
+• *{walks} walks, {sacrifice_flies} sacrifice flies, {home_run_outs} home-run outs*
+• *{plate_appearances} plate appearances*
+• *OBP: {OBP} | SLG: {SLG} | OPS: {OPS}*
+• Runs by game: *{game_1_runs} → {game_2_runs} → … → {latest_game_runs}*
+
+{Short season takeaway tied to the supplied game narrative.}
 
 📊 *Full stats:*
 {verified publishing link or user-supplied link established for this team and season}
@@ -125,8 +137,12 @@ Through {number} games, we’re hitting *{.AVG} as a team* with *{hits} hits, {r
   with `&`, and state the AB minimum for batting average and OPS. Use a supplied
   minimum; otherwise choose a sensible 5 or 10 AB threshold for the sample and apply
   it consistently. Omit categories with no qualifying or positive leader.
-- Keep the team summary concise; select meaningful totals such as triples when relevant.
-  Place the stats link before the closing, as in the supplied examples.
+- Include Season Breakdown when season totals are available. Omit unavailable
+  metrics rather than inventing values, and use singular labels for counts of one.
+  Show runs by game only when the individual game totals and their chronological
+  order are established; include only the games actually played.
+- Keep the season takeaway concise. Place the stats link before the closing,
+  as in the supplied examples.
 
 ## Voice and accuracy
 
