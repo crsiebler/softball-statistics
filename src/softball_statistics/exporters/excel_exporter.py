@@ -480,7 +480,7 @@ def _create_legend_sheet(writer: pd.ExcelWriter) -> None:
         {
             "Abbreviation": "OBP",
             "Full Name": "On-Base Percentage",
-            "Formula": "(H + BB + HBP + SF) / (AB + BB + HBP + SF)",
+            "Formula": "(H + BB + HBP) / (AB + BB + HBP + SF)",
         },
         {
             "Abbreviation": "SLG",
@@ -1084,6 +1084,20 @@ def _create_per_game_sheet(
 
         # Calculate team totals from player data
         if player_data:
+            total_hits = sum(player["H"] for player in player_data)
+            total_at_bats = sum(player["AB"] for player in player_data)
+            total_walks = sum(player["BB"] for player in player_data)
+            total_sacrifice_flies = sum(player["SF"] for player in player_data)
+            team_obp = calculate_obp(
+                total_hits, total_walks, 0, total_at_bats, total_sacrifice_flies
+            )
+            team_slg = calculate_slg(
+                sum(player["1B"] for player in player_data),
+                sum(player["2B"] for player in player_data),
+                sum(player["3B"] for player in player_data),
+                sum(player["HR"] for player in player_data),
+                total_at_bats,
+            )
             totals_row = {
                 "Player": "TEAM TOTALS",
                 "PA": sum(player["PA"] for player in player_data),
@@ -1099,9 +1113,9 @@ def _create_per_game_sheet(
                 "RBI": sum(player["RBI"] for player in player_data),
                 "R": sum(player["R"] for player in player_data),
                 "BA": f"{calculate_batting_average(sum(player['H'] for player in player_data), sum(player['AB'] for player in player_data)):.3f}",
-                "OBP": f"{calculate_batting_average(sum(player['H'] for player in player_data), sum(player['AB'] for player in player_data)):.3f}",  # Simplified
-                "SLG": f"{calculate_slg(sum(player['1B'] for player in player_data), sum(player['2B'] for player in player_data), sum(player['3B'] for player in player_data), sum(player['HR'] for player in player_data), sum(player['AB'] for player in player_data)):.3f}",
-                "OPS": f"{calculate_ops(calculate_batting_average(sum(player['H'] for player in player_data), sum(player['AB'] for player in player_data)), calculate_slg(sum(player['1B'] for player in player_data), sum(player['2B'] for player in player_data), sum(player['3B'] for player in player_data), sum(player['HR'] for player in player_data), sum(player['AB'] for player in player_data))):.3f}",
+                "OBP": f"{team_obp:.3f}",
+                "SLG": f"{team_slg:.3f}",
+                "OPS": f"{calculate_ops(team_obp, team_slg):.3f}",
             }
             worksheet.append([])
             worksheet.append(list(totals_row.values()))

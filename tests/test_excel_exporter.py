@@ -2,12 +2,14 @@ import os
 import tempfile
 from datetime import date
 
+import pandas as pd
 import pytest
 from openpyxl import load_workbook
 
 from softball_statistics.exporters.excel_exporter import (
     ExcelExportError,
     _abbreviate_team_name,
+    _create_per_game_sheet,
     _get_seasons_for_team,
     export_to_excel,
 )
@@ -23,6 +25,101 @@ from softball_statistics.repository.sqlite import SQLiteRepository
 
 
 class TestExcelExporter:
+    @pytest.mark.parametrize(
+        "counts,expected_obp,expected_ops",
+        [
+            ({"hits": 1, "singles": 1, "at_bats": 1, "walks": 1}, "1.000", "2.000"),
+            (
+                {
+                    "hits": 1,
+                    "singles": 1,
+                    "at_bats": 1,
+                    "walks": 1,
+                    "sacrifice_flies": 1,
+                },
+                "0.667",
+                "1.667",
+            ),
+            ({"hits": 0, "at_bats": 0, "walks": 1}, "1.000", "1.000"),
+            ({"hits": 0, "at_bats": 0, "hit_pitcher_outs": 1}, "0.000", "0.000"),
+            (
+                {"hits": 1, "singles": 1, "at_bats": 2, "home_run_outs": 1},
+                "0.500",
+                "1.000",
+            ),
+        ],
+    )
+    def test_game_team_totals_obp_and_ops(
+        self, tmp_path, counts, expected_obp, expected_ops
+    ):
+        output_path = tmp_path / "game.xlsx"
+        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+            _create_per_game_sheet(
+                "Cyclones",
+                {"season": "Fall 2026", "game_number": 1},
+                [{"player_name": "Alex", **counts}],
+                writer,
+            )
+        workbook = load_workbook(output_path)
+        try:
+            sheet = workbook["Cyclo Fall 2026 Game 1"]
+            headers = [cell.value for cell in sheet[1]]
+            totals = dict(zip(headers, [cell.value for cell in sheet[sheet.max_row]]))
+            assert totals["Player"] == "TEAM TOTALS"
+            assert totals["OBP"] == expected_obp
+            assert totals["OPS"] == expected_ops
+        finally:
+            workbook.close()
+
+    def test_game_team_totals_use_aggregate_counts(self, tmp_path):
+        output_path = tmp_path / "aggregate.xlsx"
+        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+            _create_per_game_sheet(
+                "Cyclones",
+                {"season": "Fall 2026", "game_number": 1},
+                [
+                    {
+                        "player_name": "Alex",
+                        "hits": 1,
+                        "doubles": 1,
+                        "at_bats": 1,
+                        "walks": 1,
+                    },
+                    {
+                        "player_name": "Blair",
+                        "hits": 0,
+                        "at_bats": 3,
+                        "sacrifice_flies": 1,
+                    },
+                ],
+                writer,
+            )
+        workbook = load_workbook(output_path)
+        try:
+            sheet = workbook["Cyclo Fall 2026 Game 1"]
+            headers = [cell.value for cell in sheet[1]]
+            totals = dict(zip(headers, [cell.value for cell in sheet[sheet.max_row]]))
+            assert totals["BA"] == "0.250"
+            assert totals["OBP"] == "0.333"
+            assert totals["SLG"] == "0.500"
+            assert totals["OPS"] == "0.833"
+        finally:
+            workbook.close()
+
+    def test_legend_obp_excludes_sacrifice_flies_from_numerator(self, tmp_path):
+        output_path = tmp_path / "legend.xlsx"
+        export_to_excel({}, str(output_path))
+
+        workbook = load_workbook(output_path)
+        try:
+            legend = {
+                row[0]: row[2]
+                for row in workbook["Legend"].iter_rows(min_row=2, values_only=True)
+            }
+            assert legend["OBP"] == "(H + BB + HBP) / (AB + BB + HBP + SF)"
+        finally:
+            workbook.close()
+
     def test_player_summary_obp_includes_walks(self, tmp_path):
         repo = SQLiteRepository(str(tmp_path / "test.db"))
         league_id = repo.save_league(League(None, "Fray", "Summer 2026"))
