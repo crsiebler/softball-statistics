@@ -79,7 +79,8 @@ Use single asterisks for WhatsApp bold, literal `•` bullets, and blank lines
 between sections. This requested format uses the team emoji at the start and
 end, plus section and award emojis. Honor an emoji-free request by removing
 them; keep surrounding explanations free of emojis. Substitute the braces and
-omit unsupported sections rather than returning empty placeholders.
+omit unsupported sections rather than returning empty placeholders. Put Playoff
+Standouts before Season Awards when both sections are included.
 
 ```text
 {emoji} *{team} Season Wrap-Up* {emoji}
@@ -87,6 +88,10 @@ omit unsupported sections rather than returning empty placeholders.
 {One or two result-led sentences about the season ending, with the final score and placement when established.}
 
 {Brief, candid reflection on the final game or season using supplied context.}
+
+🔥 *Playoff Standouts*
+• {player}: *{compact, verified playoff contributions}*
+• {player}: {compact, verified playoff contributions}
 
 🏆 *Season Awards*
 
@@ -96,10 +101,6 @@ omit unsupported sections rather than returning empty placeholders.
 💥 OPS Leader (min. {N} AB): {player(s)} — *{OPS}*
 🚀 Home Run Leader(s): {player(s)} — *{count}*
 👀 Walk Leader: {player(s)} — *{count}*
-
-🔥 *Playoff Standouts*
-• {player}: *{compact, verified playoff contributions}*
-• {player}: {compact, verified playoff contributions}
 
 🌟 *{team} Women Shoutout*
 • {player}: {verified season achievement}
