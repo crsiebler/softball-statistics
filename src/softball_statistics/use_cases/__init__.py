@@ -4,6 +4,7 @@ Use cases for softball statistics application.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List
 
 from softball_statistics.calculators.stats_calculator import (
@@ -42,14 +43,23 @@ class ProcessGameUseCase:
         # Parse the file
         parsed_data = self.parser.parse(file_path)
 
-        # Validate RBI total equals run total
+        # Historical season summaries preserve source counts rather than inventing
+        # runs or players to reconcile inconsistent aggregate records.
         total_rbis = sum(pa["rbis"] for pa in parsed_data["plate_appearances"])
         total_runs = sum(pa["runs_scored"] for pa in parsed_data["plate_appearances"])
 
-        if total_rbis != total_runs:
+        historical = parsed_data["metadata"]["season"].startswith("Historical ")
+        if total_rbis != total_runs and not historical:
             raise ValidationError(
                 f"RBI total ({total_rbis}) does not equal run total ({total_runs}). "
                 f"File rejected."
+            )
+        if total_rbis != total_runs and historical:
+            logging.getLogger(__name__).warning(
+                "Historical summary: preserving source RBI total (%s) and run "
+                "total (%s) despite their discrepancy.",
+                total_rbis,
+                total_runs,
             )
 
         # Create database objects
